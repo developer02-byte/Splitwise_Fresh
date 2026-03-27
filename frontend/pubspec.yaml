@@ -1,0 +1,54 @@
+name: split_ease
+description: A production-ready expense management and group splitting application.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management (Codegen)
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # Models & Serialization
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.9.0
+
+  # Networking & Real-time
+  dio: ^5.4.2
+  socket_io_client: ^2.0.3
+
+  # Functional Error Handling
+  fpdart: ^1.1.0
+
+  # Routing
+  go_router: ^13.2.0
+
+  # UI & Styling
+  google_fonts: ^6.2.1
+  cached_network_image: ^3.3.1
+  shimmer: ^3.0.0
+
+  # Offline & Core
+  sqflite: ^2.3.0
+  path_provider: ^2.1.2
+  connectivity_plus: ^5.0.2
+  shared_preferences: ^2.5.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  
+  # Codegen runners
+  build_runner: ^2.4.8
+  freezed: ^2.4.7
+  json_serializable: ^6.8.0
+  riverpod_generator: ^2.3.3
+
+flutter:
+  uses-material-design: true

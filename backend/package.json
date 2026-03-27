@@ -1,0 +1,33 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "dev:local": "node start-dev.js",
+    "start": "tsx src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "prisma": "^5.22.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  },
+  "dependencies": {
+    "@embedded-postgres/windows-x64": "^18.3.0-beta.16",
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/cors": "^11.2.0",
+    "@prisma/client": "^5.22.0",
+    "bullmq": "^5.71.1",
+    "embedded-postgres": "^18.3.0-beta.16",
+    "fastify": "^5.8.4",
+    "firebase-admin": "^13.7.0",
+    "ioredis": "^5.10.1"
+  }
+}

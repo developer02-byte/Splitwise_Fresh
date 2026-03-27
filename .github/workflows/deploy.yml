@@ -1,0 +1,66 @@
+name: Splitease Deployment Workflow
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # ── Backend Node ──
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install Backend Deps and Prisma
+        run: |
+          cd backend
+          npm ci
+          npx prisma generate
+          npm run build
+
+      # ── Docker Build & Push ──
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push Fastify API
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/splitease-api:latest
+
+      - name: Build and Push Flutter Web
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/splitease-frontend:latest
+
+      # ── Production VPS Trigger ──
+      - name: Deploy to Cloud via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}     # e.g., Your root VPC IP
+          username: ${{ secrets.SERVER_USER }} # e.g., root
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /opt/splitease
+            docker compose pull
+            docker compose up -d --build
+            docker system prune -f

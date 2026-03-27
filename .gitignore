@@ -1,0 +1,8 @@
+node_modules/
+backend/data/
+frontend/build/
+frontend/.dart_tool/
+.env
+.idea/
+.vscode/
+*.log
