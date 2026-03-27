@@ -11,7 +11,7 @@ class SocketNotifier extends _$SocketNotifier {
   @override
   IO.Socket build() {
     // 1. Initialize Socket.io connecting to Fastify
-    _socket = IO.io('http://localhost:3000', IO.OptionBuilder()
+    _socket = IO.io('http://192.168.2.6:3000', IO.OptionBuilder()
       .setTransports(['websocket']) 
       .disableAutoConnect()
       // Send HttpOnly cookies automatically attached by the browser/engine

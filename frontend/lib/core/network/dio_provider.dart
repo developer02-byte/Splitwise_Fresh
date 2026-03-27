@@ -6,7 +6,7 @@ import 'auth_interceptor.dart';
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(
     BaseOptions(
-      baseUrl: kDebugMode ? 'http://localhost:3000' : const String.fromEnvironment('API_URL', defaultValue: 'http://localhost:3000'),
+      baseUrl: kDebugMode ? 'http://192.168.2.6:3000' : const String.fromEnvironment('API_URL', defaultValue: 'http://192.168.2.6:3000'),
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
       // Automatically send HttpOnly cookies on the web and other platforms

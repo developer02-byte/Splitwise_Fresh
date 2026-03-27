@@ -16,7 +16,7 @@ const fastify = Fastify({ logger: true });
 async function start() {
   // Setup Plugins
   await fastify.register(cors, {
-    origin: ['http://localhost:8080', 'http://127.0.0.1:8080'],
+    origin: ['http://localhost:8080', 'http://127.0.0.1:8080', 'http://192.168.2.6:8080'],
     credentials: true, // required for httpOnly cookies
   });
   await fastify.register(cookie);
