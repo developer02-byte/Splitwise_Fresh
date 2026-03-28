@@ -44,21 +44,24 @@ class AuthInterceptor extends QueuedInterceptor {
       log('HTTP 401: Attempting silent refresh...', name: 'AuthInterceptor');
 
       try {
-        final refreshResponse = await dio.post('/api/auth/refresh');
+        final refreshDio = Dio(dio.options);
+        final refreshResponse = await refreshDio.post(
+          '/api/auth/refresh',
+          data: {},
+          options: Options(headers: {'Content-Type': 'application/json'}),
+        );
 
-        if (refreshResponse.statusCode == 200) {
+        if (refreshResponse.statusCode == 200 && refreshResponse.data['success'] == true) {
+          final newToken = refreshResponse.data['data']['token'] as String;
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('auth_token', newToken);
+
           _isRefreshing = false;
           // Re-attempt original request
           final opts = err.requestOptions;
-          final cloneReq = await dio.request(
-            opts.path,
-            options: Options(
-              method: opts.method,
-              headers: opts.headers,
-            ),
-            data: opts.data,
-            queryParameters: opts.queryParameters,
-          );
+          opts.headers['Authorization'] = 'Bearer $newToken';
+
+          final cloneReq = await dio.fetch(opts);
           return handler.resolve(cloneReq);
         }
       } catch (e) {

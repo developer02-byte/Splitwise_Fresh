@@ -57,7 +57,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        API_URL: http://localhost/api
+        API_URL: ${API_URL:-http://localhost:8080/api}
     container_name: splitease-nginx
     depends_on:
       - api

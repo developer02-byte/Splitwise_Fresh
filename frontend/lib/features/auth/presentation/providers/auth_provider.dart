@@ -1,7 +1,7 @@
+import 'dart:developer';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/network/dio_provider.dart';
-
 class AuthNotifier extends AsyncNotifier<Map<String, dynamic>?> {
   @override
   Future<Map<String, dynamic>?> build() async {
@@ -11,12 +11,20 @@ class AuthNotifier extends AsyncNotifier<Map<String, dynamic>?> {
   Future<Map<String, dynamic>?> _fetchCurrentUser() async {
     try {
       final dio = ref.read(dioProvider);
-      final response = await dio.get('/api/user/me');
+      log('Fetching current user...', name: 'AuthNotifier');
+      final response = await dio.get('/api/user/me').timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          log('Timeout fetching user data. Failing safely.', name: 'AuthNotifier');
+          throw Exception('Auth API timeout');
+        },
+      );
+      
       if (response.statusCode == 200 && response.data['success'] == true) {
         return response.data['data'] as Map<String, dynamic>;
       }
     } catch (e) {
-      // Unauthenticated or network error
+      log('Auth Error (unauthenticated or network): $e', name: 'AuthNotifier');
     }
     return null;
   }

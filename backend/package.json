@@ -34,10 +34,11 @@
     "fastify": "^5.8.4",
     "firebase-admin": "^13.7.0",
     "ioredis": "^5.10.1",
-    "jsonwebtoken": "^9.0.3"
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.20.0"
   },
   "optionalDependencies": {
-    "embedded-postgres": "^18.3.0-beta.16",
-    "@embedded-postgres/windows-x64": "^18.3.0-beta.16"
+    "@embedded-postgres/windows-x64": "^18.3.0-beta.16",
+    "embedded-postgres": "^18.3.0-beta.16"
   }
 }

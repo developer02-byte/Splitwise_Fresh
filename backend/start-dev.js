@@ -57,10 +57,10 @@ async function main() {
 
     console.log(`[startup] PostgreSQL running on port ${PG_PORT}`);
   } catch (err) {
-    if (err.message?.includes('EADDRINUSE') || err.message?.includes('already')) {
+    if (err?.message?.includes('EADDRINUSE') || err?.message?.includes('already')) {
       console.log('[startup] PostgreSQL already running on port', PG_PORT);
     } else {
-      console.error('[startup] PostgreSQL start error:', err.message);
+      console.error('[startup] PostgreSQL start error:', err?.message || err);
       // Don't exit - attempt to continue with running instance
     }
   }

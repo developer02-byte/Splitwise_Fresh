@@ -28,41 +28,56 @@ final _routerProvider = Provider<GoRouter>((ref) {
   final authChangeNotifier = _AuthChangeNotifier(ref);
 
   return GoRouter(
-    initialLocation: '/dashboard',
+    initialLocation: '/splash',
     refreshListenable: authChangeNotifier,
     redirect: (context, state) {
       final authState = ref.read(authNotifierProvider);
+      final loc = state.matchedLocation;
 
-      // While auth is loading, don't redirect — let the current route render
-      // (each screen handles its own loading state)
-      if (authState.isLoading) return null;
-
-      final isAuth = authState.valueOrNull != null;
-      final isLoggingIn = state.matchedLocation == '/login';
-
-      // Not authenticated → send to login
-      if (!isAuth && !isLoggingIn) return '/login';
-
-      // Authenticated but on login page → redirect based on onboarding
-      if (isAuth && isLoggingIn) {
-        final onboardingCompleted =
-            authState.valueOrNull?['onboardingCompleted'] == true;
-        if (!onboardingCompleted) return '/onboarding';
-        return '/dashboard';
+      // Unhandled Exceptions should behave as logged out
+      if (authState.hasError) {
+        return loc == '/login' ? null : '/login';
       }
 
-      // Authenticated but onboarding not completed → force onboarding
-      if (isAuth) {
-        final onboardingCompleted =
-            authState.valueOrNull?['onboardingCompleted'] == true;
-        if (!onboardingCompleted && state.matchedLocation != '/onboarding') {
-          return '/onboarding';
-        }
+      // While auth is loading, ensure we stay on splash
+      if (authState.isLoading) {
+        return loc == '/splash' ? null : '/splash';
+      }
+
+      final isAuth = authState.valueOrNull != null;
+
+      // Not authenticated → force to login page (allow legal pages)
+      if (!isAuth) {
+        if (loc == '/legal/privacy' || loc == '/legal/terms') return null;
+        return loc == '/login' ? null : '/login';
+      }
+
+      // If authenticated, check onboarding
+      final onboardingCompleted = authState.valueOrNull?['onboardingCompleted'] == true;
+      
+      // Prevent authenticated users from going to splash or login
+      if (loc == '/splash' || loc == '/login') {
+        return onboardingCompleted ? '/dashboard' : '/onboarding';
+      }
+
+      // Prevent users who haven't completed onboarding from escaping
+      if (!onboardingCompleted && loc != '/onboarding') {
+        return '/onboarding';
+      }
+      
+      // Prevent users who HAVE completed onboarding from going back to onboarding
+      if (onboardingCompleted && loc == '/onboarding') {
+        return '/dashboard';
       }
 
       return null;
     },
     routes: [
+      // Splash / loading screen
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const _SplashScreen(),
+      ),
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
@@ -108,6 +123,73 @@ final _routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+/// Branded splash screen shown while auth state is being determined.
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Scaffold(
+      backgroundColor:
+          isDark ? const Color(0xFF0F1117) : const Color(0xFFF9FAFB),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF6366F1).withOpacity(0.4),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.receipt_long_rounded,
+                  color: Colors.white, size: 36),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'SplitEase',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Loading your account...',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey,
+                  ),
+            ),
+            const SizedBox(height: 32),
+            const SizedBox(
+              width: 32,
+              height: 32,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor:
+                    AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class SplitEaseApp extends ConsumerWidget {
   const SplitEaseApp({super.key});
