@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'dart:developer';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Dio interceptor for handling 401 Unauthorized errors and automatically
 /// attaching JWT tokens.
@@ -19,8 +19,8 @@ class AuthInterceptor extends QueuedInterceptor {
     RequestInterceptorHandler handler,
   ) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      const storage = FlutterSecureStorage();
+      final token = await storage.read(key: 'auth_token');
       if (token != null && token.isNotEmpty) {
         options.headers['Authorization'] = 'Bearer $token';
       }
@@ -52,9 +52,8 @@ class AuthInterceptor extends QueuedInterceptor {
         );
 
         if (refreshResponse.statusCode == 200 && refreshResponse.data['success'] == true) {
-          final newToken = refreshResponse.data['data']['token'] as String;
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('auth_token', newToken);
+          const storage = FlutterSecureStorage();
+          await storage.write(key: 'auth_token', value: newToken);
 
           _isRefreshing = false;
           // Re-attempt original request

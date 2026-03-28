@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,41 +16,71 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  bool _isSignUp = false;
   final _formKey = GlobalKey<FormState>();
-
-  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  void _toggleMode() {
-    setState(() => _isSignUp = !_isSignUp);
-    _passwordController.clear();
+  String? _serverError;
+  int _failedAttempts = 0;
+  DateTime? _lockoutUntil;
+  Timer? _lockoutTimer;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _lockoutTimer?.cancel();
+    super.dispose();
+  }
+
+  void _checkLockoutState() {
+    if (_lockoutUntil != null) {
+      if (DateTime.now().isAfter(_lockoutUntil!)) {
+        setState(() {
+          _failedAttempts = 0;
+          _lockoutUntil = null;
+          _serverError = null;
+        });
+      }
+    }
+  }
+
+  bool _isValidEmail(String email) {
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
   }
 
   Future<void> _submit() async {
+    _checkLockoutState();
+    if (_lockoutUntil != null) return;
+
+    setState(() { _serverError = null; });
     if (!_formKey.currentState!.validate()) return;
     
     final auth = ref.read(authNotifierProvider.notifier);
     
     try {
-      if (_isSignUp) {
-        await auth.register(
-            _nameController.text.trim(),
-            _emailController.text.trim(),
-            _passwordController.text);
-      } else {
-        await auth.login(_emailController.text.trim(), _passwordController.text);
-      }
-      
-      // Router redirect guard will handle onboarding vs dashboard
+      await auth.login(_emailController.text.trim(), _passwordController.text);
       if (mounted) context.go('/dashboard');
-      
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(backgroundColor: AppColors.error, content: Text(e.toString().replaceAll('Exception: ', ''))),
-        );
+        setState(() {
+          final errorMsg = e.toString().replaceAll('Exception: ', '');
+          if (errorMsg.contains('Too many attempts')) {
+            _serverError = 'Too many attempts. Please try again later.';
+          } else {
+            _serverError = errorMsg;
+          }
+          _passwordController.clear();
+          
+          _failedAttempts++;
+          if (_failedAttempts >= 5) {
+            _lockoutUntil = DateTime.now().add(const Duration(minutes: 5));
+            _serverError = 'Too many attempts. Locked out for 5 minutes.';
+            _lockoutTimer = Timer(const Duration(minutes: 5), () {
+              if (mounted) setState(() {});
+            });
+          }
+        });
       }
     }
   }
@@ -55,6 +88,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 900;
+    _checkLockoutState();
+    final isLockedOut = _lockoutUntil != null;
     
     return Scaffold(
       body: Row(
@@ -110,61 +145,119 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           const SizedBox(height: 32),
                         ],
                         Text(
-                          _isSignUp ? 'Create an account' : 'Welcome back',
+                          'Welcome back',
                           style: Theme.of(context).textTheme.displayMedium?.copyWith(fontSize: 32),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          _isSignUp ? 'Sign up to start splitting expenses.' : 'Log in to view your ledger.',
+                          'Log in to view your ledger.',
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                               color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
-                        const SizedBox(height: 48),
+                        const SizedBox(height: 32),
+                        
+                        // --- Social Login Section ---
+                        OutlinedButton.icon(
+                          onPressed: () async {
+                            try {
+                              await ref.read(authNotifierProvider.notifier).loginWithGoogle();
+                              if (context.mounted) context.go('/dashboard');
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                              }
+                            }
+                          },
+                          icon: Image.network('https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg', width: 20),
+                          label: const Text('Continue with Google', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 48),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                        ),
+                        
+                        if (!kIsWeb && Platform.isIOS) ...[
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () async {
+                              try {
+                                await ref.read(authNotifierProvider.notifier).loginWithApple();
+                                if (context.mounted) context.go('/dashboard');
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                                }
+                              }
+                            },
+                            icon: const Icon(Icons.apple, color: Colors.white, size: 24),
+                            label: const Text('Continue with Apple', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              minimumSize: const Size(double.infinity, 48),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                        ],
+                        
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            const Expanded(child: Divider(color: Colors.grey)),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text('OR', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 12)),
+                            ),
+                            const Expanded(child: Divider(color: Colors.grey)),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
 
                         Form(
                           key: _formKey,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              if (_isSignUp) ...[
-                                _buildLabel('Full Name'),
-                                TextFormField(
-                                  controller: _nameController,
-                                  decoration: const InputDecoration(hintText: 'John Appleseed'),
-                                  validator: (value) => value == null || value.isEmpty ? 'Required' : null,
-                                ),
-                                const SizedBox(height: 20),
-                              ],
                               _buildLabel('Email Address'),
                               TextFormField(
                                 controller: _emailController,
+                                autofocus: true,
                                 keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
                                 decoration: const InputDecoration(hintText: 'name@example.com'),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) return 'Required';
-                                  if (!value.contains('@')) return 'Enter a valid email';
+                                  if (!_isValidEmail(value)) return 'Enter a valid email';
                                   return null;
                                 },
+                                onChanged: (_) => setState(() => _serverError = null),
                               ),
                               const SizedBox(height: 20),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   _buildLabel('Password'),
-                                  if (!_isSignUp)
-                                    TextButton(
-                                      onPressed: () {},
-                                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0)),
-                                      child: const Text('Forgot password?'),
-                                    ),
+                                  TextButton(
+                                    onPressed: () {
+                                      context.push('/forgot-password');
+                                    },
+                                    style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0)),
+                                    child: const Text('Forgot password?'),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 8),
                               TextFormField(
                                 controller: _passwordController,
                                 obscureText: true,
-                                decoration: const InputDecoration(hintText: '••••••••'),
-                                validator: (value) => value == null || value.length < 6 ? 'Min 6 characters' : null,
+                                textInputAction: TextInputAction.done,
+                                onFieldSubmitted: (_) => isLockedOut ? null : _submit(),
+                                decoration: InputDecoration(
+                                  hintText: '••••••••',
+                                  errorText: _serverError,
+                                ),
+                                validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                                onChanged: (_) => setState(() => _serverError = null),
                               ),
                               const SizedBox(height: 40),
 
@@ -173,10 +266,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 return SizedBox(
                                   height: 54,
                                   child: ElevatedButton(
-                                    onPressed: authState.isLoading ? null : _submit,
+                                    onPressed: (authState.isLoading || isLockedOut) ? null : _submit,
                                     child: authState.isLoading
                                         ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                        : Text(_isSignUp ? 'Create Account' : 'Log In', style: const TextStyle(fontSize: 16)),
+                                        : const Text('Log In', style: TextStyle(fontSize: 16)),
                                   ),
                                 );
                               }),
@@ -186,12 +279,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text(_isSignUp ? "Already have an account?" : "Don't have an account?", 
+                                  Text("Don't have an account?", 
                                       style: Theme.of(context).textTheme.bodyMedium),
                                   const SizedBox(width: 8),
                                   TextButton(
-                                    onPressed: _toggleMode,
-                                    child: Text(_isSignUp ? 'Log In' : 'Sign Up'),
+                                    onPressed: () => context.push('/signup'),
+                                    child: const Text('Sign Up'),
                                   ),
                                 ],
                               )

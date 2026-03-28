@@ -18,28 +18,34 @@ export default async function activityRoutes(fastify: FastifyInstance) {
       friendId,
       dateFrom,
       dateTo,
+      type, // 'expense' | 'settlement'
+      role, // 'lent' | 'borrowed'
     } = request.query as any;
 
     try {
       // ── Expenses ──────────────────────────────────────────
       const expenseWhere: any = {
         deletedAt: null,
-        splits: { some: { userId } }, // Only expenses relevant to this user
+        splits: { some: { userId } },
       };
       if (groupId) expenseWhere.groupId = Number(groupId);
       if (dateFrom) expenseWhere.createdAt = { gte: new Date(dateFrom) };
       if (dateTo) expenseWhere.createdAt = { ...(expenseWhere.createdAt || {}), lte: new Date(dateTo) };
+      
+      if (role === 'lent') expenseWhere.paidBy = userId;
+      if (role === 'borrowed') expenseWhere.paidBy = { not: userId };
 
-      const expenses = await prisma.expense.findMany({
-        where: expenseWhere,
-        take: Number(limit),
-        ...(cursor && { cursor: { id: Number(cursor) }, skip: 1 }),
-        orderBy: { createdAt: 'desc' },
-        include: {
-          payer: { select: { id: true, name: true, avatarUrl: true } },
-          splits: { where: { userId }, select: { owedAmount: true } },
-        },
-      });
+      const expenses = (type && type !== 'expense') 
+        ? [] 
+        : await prisma.expense.findMany({
+            where: expenseWhere,
+            take: Number(limit),
+            orderBy: { createdAt: 'desc' },
+            include: {
+              payer: { select: { id: true, name: true, avatarUrl: true } },
+              splits: { where: { userId }, select: { owedAmount: true } },
+            },
+          });
 
       // ── Settlements ───────────────────────────────────────
       const settlementWhere: any = {
@@ -53,16 +59,21 @@ export default async function activityRoutes(fastify: FastifyInstance) {
           { payerId: Number(friendId), payeeId: userId },
         ];
       }
+      
+      if (role === 'lent') settlementWhere.payeeId = userId; // You were paid
+      if (role === 'borrowed') settlementWhere.payerId = userId; // You paid someone
 
-      const settlements = await prisma.settlement.findMany({
-        where: settlementWhere,
-        take: Number(limit),
-        orderBy: { createdAt: 'desc' },
-        include: {
-          payer: { select: { id: true, name: true, avatarUrl: true } },
-          payee: { select: { id: true, name: true, avatarUrl: true } },
-        },
-      });
+      const settlements = (type && type !== 'settlement') 
+        ? [] 
+        : await prisma.settlement.findMany({
+            where: settlementWhere,
+            take: Number(limit),
+            orderBy: { createdAt: 'desc' },
+            include: {
+              payer: { select: { id: true, name: true, avatarUrl: true } },
+              payee: { select: { id: true, name: true, avatarUrl: true } },
+            },
+          });
 
       // ── Merge & Sort by createdAt DESC ───────────────────
       const expenseFeed = expenses.map((e: any) => ({

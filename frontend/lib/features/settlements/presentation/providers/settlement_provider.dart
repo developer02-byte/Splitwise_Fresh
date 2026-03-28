@@ -1,75 +1,57 @@
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
-import 'package:dio/dio.dart';
-import 'dart:developer';
+import '../../../../core/network/dio_provider.dart';
+import '../../../dashboard/presentation/providers/balance_provider.dart';
+import '../../../activity/presentation/providers/activity_provider.dart';
 
-// Assume BalanceNotifier exists from Phase 3
-import '../../dashboard/presentation/providers/balance_provider.dart';
-
-part 'settlement_provider.g.dart';
-
-@riverpod
-class SettlementNotifier extends _$SettlementNotifier {
+class SettlementNotifier extends AsyncNotifier<void> {
   @override
-  AsyncValue<void> build() {
-    return const AsyncData(null);
+  Future<void> build() async {
+    return;
   }
 
-  /// Implements Optimistic UI pattern for instantaneous user feedback
-  Future<bool> settleUp({
+  Future<void> submitSettlement({
     required int payeeId,
     required int amountCents,
   }) async {
     state = const AsyncLoading();
-
-    // 1. Snapshot the current balance state before mutation
-    final previousBalanceState = ref.read(balanceNotifierProvider).value;
-    
-    if (previousBalanceState == null) {
-      state = AsyncError(Exception("Balance not loaded"), StackTrace.current);
-      return false;
-    }
-
-    try {
-      // 2. Optimistic Rendering: Instantly modify the global Balance provider 
-      // without waiting for the network call. This makes the UI feel infinitely fast.
-      ref.read(balanceNotifierProvider.notifier).state = AsyncData(
-        UserBalances(
-          userAreOwed: previousBalanceState.userAreOwed,
-          // Subtract exactly what we just paid instantly
-          userOwe: previousBalanceState.userOwe - amountCents, 
-          totalBalance: previousBalanceState.totalBalance + amountCents,
-          currency: previousBalanceState.currency,
-        )
-      );
-
+    state = await AsyncValue.guard(() async {
+      final dio = ref.read(dioProvider);
       final idempotencyKey = const Uuid().v4();
-      final dio = Dio(BaseOptions(baseUrl: 'http://localhost:3000'));
-      
-      // 3. Transmit the settlement exactly
-      final response = await dio.post('/api/v1/settlements', data: {
+
+      final response = await dio.post('/api/settlements', data: {
         'payeeId': payeeId,
         'amountCents': amountCents,
         'currency': 'USD',
+        'groupId': 1, // Optional mock group
         'idempotencyKey': idempotencyKey,
       });
 
-      if (response.statusCode != 200 || response.data['success'] != true) {
-        throw Exception("Server rejected settlement");
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception(response.data['error'] ?? 'Settlement failed');
       }
 
-      state = const AsyncData(null);
-      return true;
+      // Optimistic update mechanism
+      ref.invalidate(balanceNotifierProvider);
+      ref.invalidate(activityNotifierProvider);
+    });
+  }
 
-    } catch (e, st) {
-      log('Settlement Failed - Rolling back Optimistic UI', name: 'SettlementProvider', error: e);
-      
-      // 4. Rollback: If anything failed (500 Server, Network Drop), 
-      // instantly revert the UI math to the snapshot.
-      ref.read(balanceNotifierProvider.notifier).state = AsyncData(previousBalanceState);
-      
-      state = AsyncError(e, st);
-      return false;
-    }
+  Future<void> settleAll() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final dio = ref.read(dioProvider);
+      final response = await dio.post('/api/settlements/settle-all');
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception(response.data['error'] ?? 'Settle all failed');
+      }
+
+      ref.invalidate(balanceNotifierProvider);
+      ref.invalidate(activityNotifierProvider);
+    });
   }
 }
+
+final settlementNotifierProvider =
+    AsyncNotifierProvider<SettlementNotifier, void>(SettlementNotifier.new);

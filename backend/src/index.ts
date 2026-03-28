@@ -5,6 +5,7 @@ import rateLimit from '@fastify/rate-limit';
 
 import authRoutes from './routes/auth';
 import { verifyAccessToken } from './routes/auth';
+import socialAuthRoutes from './routes/socialAuth';
 import activityRoutes from './routes/activity';
 import expensesRoutes from './routes/expenses';
 import friendsRoutes from './routes/friends';
@@ -12,6 +13,10 @@ import groupsRoutes from './routes/groups';
 import invitesRoutes from './routes/invites';
 import settlementsRoutes from './routes/settlements';
 import userRoutes from './routes/user';
+import legalRoutes from './routes/legal';
+import notificationsRoutes from './routes/notifications';
+import categoryRoutes from './routes/categories';
+import searchRoutes from './routes/search';
 
 const fastify = Fastify({ logger: true });
 
@@ -63,6 +68,7 @@ async function start() {
   // Register all routes
   // Prefixes from Phase plan
   fastify.register(authRoutes, { prefix: '/api/auth' });
+  fastify.register(socialAuthRoutes, { prefix: '/api/auth' });
   fastify.register(activityRoutes, { prefix: '/api/user/activities' });
   fastify.register(expensesRoutes, { prefix: '/api/expenses' });
   fastify.register(friendsRoutes, { prefix: '/api/user/friends' });
@@ -70,6 +76,10 @@ async function start() {
   fastify.register(invitesRoutes, { prefix: '/api/invites' });
   fastify.register(settlementsRoutes, { prefix: '/api/settlements' });
   fastify.register(userRoutes, { prefix: '/api/user' });
+  fastify.register(legalRoutes, { prefix: '/api/legal' });
+  fastify.register(notificationsRoutes, { prefix: '/api/notifications' });
+  fastify.register(categoryRoutes, { prefix: '/api/categories' });
+  fastify.register(searchRoutes, { prefix: '/api/search' });
   
   // Also register currencies for formatCurrency (mock)
   fastify.get('/api/currencies/rates', async (request, reply) => {
@@ -81,6 +91,11 @@ async function start() {
 
   // Start Server
   try {
+    // Story 11: Email Digest Scheduled Job (Mock implementation)
+    setInterval(() => {
+      console.log('[CRON] Executing weekly email digest job...');
+    }, 7 * 24 * 60 * 60 * 1000); // Weekly
+    
     const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
     await fastify.listen({ port, host: '0.0.0.0' });
     console.log(`SplitEase Backend is running safely on port ${port}!`);

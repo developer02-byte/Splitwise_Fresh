@@ -7,13 +7,16 @@ class UserProfile {
   final String email;
   final String? avatarUrl;
   final String defaultCurrency;
+  final String provider;
+  final String timezone;
 
   UserProfile({
     required this.id,
     required this.name,
     required this.email,
     this.avatarUrl,
-    required this.defaultCurrency,
+    this.provider = 'email',
+    this.timezone = 'UTC',
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
@@ -23,12 +26,15 @@ class UserProfile {
       email: json['email'] as String,
       avatarUrl: json['avatarUrl'] as String?,
       defaultCurrency: json['defaultCurrency'] as String? ?? 'USD',
+      provider: json['provider'] as String? ?? 'email',
+      timezone: json['timezone'] as String? ?? 'UTC',
     );
   }
 
   UserProfile copyWith({
     String? name,
     String? defaultCurrency,
+    String? timezone,
   }) {
     return UserProfile(
       id: id,
@@ -36,6 +42,8 @@ class UserProfile {
       email: email,
       avatarUrl: avatarUrl,
       defaultCurrency: defaultCurrency ?? this.defaultCurrency,
+      timezone: timezone ?? this.timezone,
+      provider: provider,
     );
   }
 }
@@ -53,7 +61,7 @@ class ProfileNotifier extends AsyncNotifier<UserProfile> {
     }
   }
 
-  Future<void> updateProfile({String? newName, String? newCurrency}) async {
+  Future<void> updateProfile({String? newName, String? newCurrency, String? newTimezone}) async {
     final current = state.value;
     if (current == null) return;
     
@@ -63,6 +71,7 @@ class ProfileNotifier extends AsyncNotifier<UserProfile> {
       final response = await dio.put('/api/user/me', data: {
         if (newName != null) 'name': newName,
         if (newCurrency != null) 'defaultCurrency': newCurrency,
+        if (newTimezone != null) 'timezone': newTimezone,
       });
 
       if (response.data['success'] == true) {
@@ -83,6 +92,18 @@ class ProfileNotifier extends AsyncNotifier<UserProfile> {
     } catch (e) {
       if (e is Exception) throw e;
       throw Exception('An unknown error occurred');
+    }
+  }
+
+  Future<void> changePassword({required String currentPassword, required String newPassword}) async {
+    final dio = ref.read(dioProvider);
+    final response = await dio.put('/api/user/me/password', data: {
+      'currentPassword': currentPassword,
+      'newPassword': newPassword,
+    });
+
+    if (response.data['success'] != true) {
+      throw Exception(response.data['error'] ?? 'Failed to update password');
     }
   }
 }

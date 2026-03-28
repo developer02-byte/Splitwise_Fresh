@@ -1,8 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../features/notifications/presentation/providers/notification_provider.dart';
 
 class ScaffoldWithNavBar extends StatefulWidget {
   const ScaffoldWithNavBar({
@@ -44,9 +46,35 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
               ),
               Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.notifications_none_rounded),
-                    onPressed: () {},
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final notifs = ref.watch(notificationNotifierProvider).valueOrNull ?? [];
+                      final unreadCount = notifs.where((n) => !n.read).length;
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.notifications_none_rounded),
+                            onPressed: () => context.push('/notifications'),
+                          ),
+                          if (unreadCount > 0)
+                            Positioned(
+                              right: 4,
+                              top: 4,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(color: AppColors.error, shape: BoxShape.circle),
+                                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                                child: Text(
+                                  unreadCount > 9 ? '9+' : '$unreadCount', 
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            )
+                        ],
+                      );
+                    }
                   ),
                   const SizedBox(width: 16),
                   GestureDetector(
@@ -70,7 +98,6 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
       return Scaffold(
         body: Row(
           children: [
-            // Fixed Sidebar
             AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               curve: Curves.fastOutSlowIn,
@@ -108,25 +135,6 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
                       ],
                     ),
                   ),
-                  if (!_isSidebarCollapsed)
-                    Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.add_rounded),
-                        label: const Text('Add Expense'),
-                        onPressed: () {},
-                      ),
-                    ),
-                  if (_isSidebarCollapsed)
-                    Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: FloatingActionButton(
-                        mini: true,
-                        backgroundColor: AppColors.primary500,
-                        onPressed: () {},
-                        child: const Icon(Icons.add_rounded, color: Colors.white),
-                      ),
-                    ),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -198,7 +206,7 @@ class _SidebarItem extends StatelessWidget {
       child: ListTile(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         onTap: onTap,
-        contentPadding: isCollapsed ? const EdgeInsets.symmetric(horizontal: 16) : const EdgeInsets.symmetric(horizontal: 16),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
         leading: Icon(icon, color: isSelected ? AppColors.primary500 : colorScheme.onSurfaceVariant),
         title: isCollapsed
             ? null

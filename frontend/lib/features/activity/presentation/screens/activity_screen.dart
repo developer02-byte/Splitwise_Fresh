@@ -6,6 +6,7 @@ import '../../../../core/constants/dimensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/activity_provider.dart';
 import '../../../expenses/presentation/providers/expense_action_provider.dart';
+import 'package:go_router/go_router.dart';
 
 class ActivityScreen extends ConsumerStatefulWidget {
   const ActivityScreen({super.key});
@@ -39,7 +40,28 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
               ),
               child: Icon(Icons.filter_list_rounded, color: Theme.of(context).colorScheme.primary),
             ),
-            onPressed: () {},
+            onPressed: () {
+              // Stub Date Range filter requirement
+              showModalBottomSheet(context: context, builder: (ctx) => SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                       Text('Filter by Date Range', style: Theme.of(context).textTheme.titleLarge),
+                       const SizedBox(height: 16),
+                       ListTile(title: const Text('Last 7 Days'), onTap: () => Navigator.pop(ctx)),
+                       ListTile(title: const Text('Last 30 Days'), onTap: () => Navigator.pop(ctx)),
+                       ListTile(title: const Text('This Year'), onTap: () => Navigator.pop(ctx)),
+                       ListTile(title: const Text('Custom Range...'), onTap: () async {
+                         Navigator.pop(ctx);
+                         await showDateRangePicker(context: context, firstDate: DateTime(2020), lastDate: DateTime.now());
+                       }),
+                    ]
+                  )
+                )
+              ));
+            },
           ),
           const SizedBox(width: 8),
         ],
@@ -59,6 +81,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                     ActivityFilter.all: 'All',
                     ActivityFilter.groups: 'Groups',
                     ActivityFilter.friends: 'Friends',
+                    ActivityFilter.lent: 'Lent',
+                    ActivityFilter.borrowed: 'Borrowed',
+                    ActivityFilter.expenses: 'Expenses',
+                    ActivityFilter.settlements: 'Settlements',
                   };
                   final isSelected = _activeFilter == filter;
                   return Padding(
@@ -106,14 +132,29 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                 if (state.items.isEmpty) return _buildEmptyState(context);
                 return RefreshIndicator(
                   onRefresh: () => ref.read(activityNotifierProvider.notifier).refresh(),
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: kSpacingL, vertical: kSpacingM),
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: state.items.length,
-                    itemBuilder: (context, index) {
-                      final item = state.items[index];
-                      return _ActivityFeedItem(item: item);
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: (scrollInfo) {
+                      if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200 &&
+                          !activityState.isLoading && !activityState.isRefreshing) {
+                        ref.read(activityNotifierProvider.notifier).fetchMore();
+                      }
+                      return false;
                     },
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: kSpacingL, vertical: kSpacingM),
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: state.items.length + (state.hasMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index == state.items.length) {
+                          return const Center(child: Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: CircularProgressIndicator(),
+                          ));
+                        }
+                        final item = state.items[index];
+                        return _ActivityFeedItem(item: item);
+                      },
+                    ),
                   ),
                 );
               },
@@ -232,7 +273,7 @@ class _ActivityFeedItem extends ConsumerWidget {
               title: const Text('Edit Expense', style: TextStyle(fontWeight: FontWeight.w600)),
               onTap: () {
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Edit Expense UI - coming soon')));
+                context.push('/expenses/${item.id}/edit');
               },
             ),
             ListTile(
@@ -329,19 +370,26 @@ class _ActivityFeedItem extends ConsumerWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
           onLongPress: isSettlement ? null : () => _showActionSheet(context, ref),
-          onTap: () {},
+          onTap: () {
+            if (!isSettlement) context.push('/expenses/${item.id}');
+          },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 52,
+                  height: 52,
                   decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      colors: [iconColor.withOpacity(0.2), iconColor.withOpacity(0.05)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: iconColor.withOpacity(0.1)),
                   ),
-                  child: Icon(iconData, color: iconColor, size: 24),
+                  child: Icon(iconData, color: iconColor, size: 28),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -350,25 +398,53 @@ class _ActivityFeedItem extends ConsumerWidget {
                     children: [
                       Text(
                         item.title,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          letterSpacing: -0.3,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _timeAgo(item.createdAt),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Text(
+                             _timeAgo(item.createdAt),
+                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                               color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                               fontWeight: FontWeight.w500,
+                             ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Icon(Icons.circle, size: 3, color: Colors.grey),
+                          const SizedBox(width: 6),
+                          Text(
+                            item.type == ActivityType.settlement ? 'Settlement' : 'Expense',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white54 : Colors.black45,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
                       ),
                       if (yourShareDisplay != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          item.youPaid ? 'You lent $yourShareDisplay' : 'You borrowed $yourShareDisplay',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: item.youPaid ? AppColors.success : AppColors.error,
-                            fontWeight: FontWeight.w700,
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: (item.youPaid ? AppColors.success : AppColors.error).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            item.youPaid ? 'You lent $yourShareDisplay' : 'You borrowed $yourShareDisplay',
+                            style: TextStyle(
+                              color: item.youPaid ? AppColors.success : AppColors.error,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ),
                       ],
@@ -383,7 +459,9 @@ class _ActivityFeedItem extends ConsumerWidget {
                     Text(
                       amountDisplay,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 18,
+                        letterSpacing: -0.5,
                         color: isCredit ? AppColors.success : AppColors.error,
                       ),
                     ),
@@ -391,7 +469,8 @@ class _ActivityFeedItem extends ConsumerWidget {
                       item.currency,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 10,
                       ),
                     ),
                   ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/network/dio_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -7,6 +8,7 @@ import '../../../../core/constants/dimensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/profile_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../core/theme/theme_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -53,19 +55,6 @@ class ProfileScreen extends ConsumerWidget {
                           shape: BoxShape.circle,
                           border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), width: 2),
                         ),
-                        child: CircleAvatar(
-                          radius: 46,
-                          backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                          child: Text(
-                            profile.name.substring(0, 1).toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 32,
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
                       const SizedBox(height: 24),
                       Text(profile.name, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
                       const SizedBox(height: 8),
@@ -96,20 +85,46 @@ class ProfileScreen extends ConsumerWidget {
                   icon: Icons.payments_rounded,
                   title: 'Default Currency',
                   trailing: Text(profile.defaultCurrency, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
-                  onTap: () {},
+                  onTap: () => _showCurrencyPicker(context, ref, profile),
+                ),
+                _SettingsTile(
+                  icon: Icons.public_rounded,
+                  title: 'Timezone',
+                  trailing: Text(profile.timezone, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                  onTap: () => _showTimezonePicker(context, ref, profile),
                 ),
                 _SettingsTile(
                   icon: Icons.notifications_rounded,
                   title: 'Notifications',
                   trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
-                  onTap: () {},
+                  onTap: () => context.push('/notifications'),
                 ),
                 _SettingsTile(
                   icon: Icons.dark_mode_rounded,
                   title: 'Dark Mode',
-                  trailing: Switch(value: isDark, onChanged: (val) {}, activeColor: Theme.of(context).colorScheme.primary),
-                  showDivider: false,
+                  trailing: Switch(
+                    value: ref.watch(themeNotifierProvider) == ThemeMode.dark || 
+                          (ref.watch(themeNotifierProvider) == ThemeMode.system && isDark), 
+                    onChanged: (val) => ref.read(themeNotifierProvider.notifier).toggleTheme(val), 
+                    activeColor: Theme.of(context).colorScheme.primary
+                  ),
+                  showDivider: profile.provider == 'email',
                 ),
+                if (profile.provider == 'email')
+                  _SettingsTile(
+                    icon: Icons.lock_outline_rounded,
+                    title: 'Change Password',
+                    trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+                    onTap: () => context.push('/change-password'),
+                    showDivider: false,
+                  )
+                else
+                  _SettingsTile(
+                    icon: profile.provider == 'google' ? Icons.g_mobiledata_rounded : Icons.apple_rounded,
+                    title: 'Signed in with \${(profile.provider as String)[0].toUpperCase()}\${(profile.provider as String).substring(1)}',
+                    trailing: const SizedBox.shrink(),
+                    showDivider: false,
+                  ),
               ]),
 
               const SizedBox(height: kSpacingL),
@@ -143,10 +158,7 @@ class ProfileScreen extends ConsumerWidget {
                     elevation: 0,
                     minimumSize: const Size(double.infinity, 56),
                   ),
-                  onPressed: () {
-                    ref.read(authNotifierProvider.notifier).logout();
-                    context.go('/login');
-                  },
+                  onPressed: () => _showLogoutConfirm(context, ref),
                   child: const Text('Log Out', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                 ),
               ),
@@ -201,19 +213,23 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  void _showEditProfileDialog(BuildContext context, WidgetRef ref, dynamic profile) {
     final nameCtrl = TextEditingController(text: profile.name);
+    final emailCtrl = TextEditingController(text: profile.email);
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Edit Identity', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: TextField(
-          controller: nameCtrl,
-          decoration: InputDecoration(
-            labelText: 'Name', 
-          ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Display Name')),
+            const SizedBox(height: 16),
+            TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email Address'), enabled: false),
+            const SizedBox(height: 16),
+            const Text('Avatar changes take effect immediately after saving.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+          ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
@@ -221,7 +237,7 @@ class ProfileScreen extends ConsumerWidget {
             onPressed: () {
               ref.read(profileNotifierProvider.notifier).updateProfile(newName: nameCtrl.text);
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✓ Profile updated')));
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✓ Identity updated')));
             },
             child: const Text('Save'),
           ),
@@ -230,42 +246,141 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  void _showDeleteAccountConfirm(BuildContext context, WidgetRef ref) {
+  void _showLogoutConfirm(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Delete Account?', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
-        content: const Text('Are you sure you want to permanently delete your account? This will hide your details from friends. You must have \\\$0 balances across all groups to proceed.'),
+        title: const Text('Log Out?', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('Are you sure you want to log out of your account?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
             onPressed: () async {
               Navigator.pop(ctx);
-              
-              // Simulate API Call throwing Active Debt Exception
-              try {
-                await ref.read(profileNotifierProvider.notifier).deleteAccount();
-              } catch (e) {
-                if (context.mounted) {
-                  showDialog(
-                    context: context,
-                    builder: (errCtx) => AlertDialog(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      title: const Text('Cannot Delete Account', style: TextStyle(fontWeight: FontWeight.bold)),
-                      content: Text(e.toString()),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(errCtx), child: const Text('Understood'))
-                      ],
-                    )
-                  );
-                }
-              }
+              await ref.read(authNotifierProvider.notifier).logout();
+              if (context.mounted) context.go('/login');
             },
-            child: const Text('Confirm Delete', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text('Log Out', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showCurrencyPicker(BuildContext context, WidgetRef ref, dynamic profile) {
+    final currencies = ['USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD'];
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(20),
+            child: Text('Select Default Currency', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ),
+          ...currencies.map((c) => ListTile(
+            title: Text(c),
+            trailing: profile.defaultCurrency == c ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary) : null,
+            onTap: () {
+              ref.read(profileNotifierProvider.notifier).updateProfile(newCurrency: c);
+              Navigator.pop(ctx);
+            },
+          )),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  void _showTimezonePicker(BuildContext context, WidgetRef ref, dynamic profile) {
+    final timezones = [
+      'UTC', 'America/New_York', 'America/Los_Angeles', 'Europe/London', 
+      'Europe/Berlin', 'Asia/Tokyo', 'Asia/Kolkata', 'Australia/Sydney'
+    ];
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Select Timezone', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            ...timezones.map((tz) => ListTile(
+              title: Text(tz),
+              trailing: profile.timezone == tz ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary) : null,
+              onTap: () {
+                ref.read(profileNotifierProvider.notifier).updateProfile(newTimezone: tz);
+                Navigator.pop(ctx);
+              },
+            )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteAccountConfirm(BuildContext context, WidgetRef ref) {
+    final verifyCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) {
+          final isMatch = verifyCtrl.text == 'DELETE';
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text('Delete Account?', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Are you sure you want to permanently delete your account? This will hide your details from friends. You must have \$0 balances across all groups to proceed.'),
+                const SizedBox(height: 16),
+                const Text('Type "DELETE" below to confirm:', style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: verifyCtrl,
+                  decoration: const InputDecoration(hintText: 'DELETE', border: OutlineInputBorder()),
+                  onChanged: (val) => setState(() {}),
+                )
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              TextButton(
+                style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                onPressed: !isMatch ? null : () async {
+                  Navigator.pop(ctx);
+                  try {
+                    await ref.read(profileNotifierProvider.notifier).deleteAccount();
+                    await ref.read(authNotifierProvider.notifier).logout();
+                    if (context.mounted) context.go('/login');
+                  } catch (e) {
+                    if (context.mounted) {
+                      showDialog(
+                        context: context,
+                        builder: (errCtx) => AlertDialog(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          title: const Text('Cannot Delete Account', style: TextStyle(fontWeight: FontWeight.bold)),
+                          content: Text(e.toString()),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(errCtx), child: const Text('Understood'))
+                          ],
+                        )
+                      );
+                    }
+                  }
+                },
+                child: const Text('Confirm Delete', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          );
+        }
       ),
     );
   }

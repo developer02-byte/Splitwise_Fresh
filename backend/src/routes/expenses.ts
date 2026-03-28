@@ -1,13 +1,14 @@
 import { FastifyInstance } from 'fastify';
 import { PrismaClient } from '@prisma/client';
+import { NotificationService } from '../services/notificationService';
 
 const prisma = new PrismaClient();
 
 export default async function expenseRoutes(fastify: FastifyInstance) {
   // ── 1. Create Expense ──────────────────────────────────────────────────────────
   fastify.post('/', async (request, reply) => {
-    const userId = (request as any).userId; // Simulated auth
-    const { groupId, title, totalAmount, originalCurrency, paidBy, splits, idempotencyKey } = request.body as any;
+    const userId = (request as any).userId; 
+    const { groupId, categoryId, title, totalAmount, originalCurrency, paidBy, splits, idempotencyKey } = request.body as any;
 
     try {
       if (idempotencyKey) {
@@ -15,15 +16,18 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
         if (existing) return reply.send({ success: true, data: existing, message: "Idempotent hit" });
       }
 
-      const sumOfSplits = splits.reduce((acc: number, split: any) => acc + split.owedAmount, 0);
-      if (sumOfSplits !== totalAmount) {
-        return reply.code(400).send({ success: false, code: 'MATH_MISMATCH', error: `Splits sum does not match` });
+      const sumOfSplits = Math.round(splits.reduce((acc: number, split: any) => acc + Number(split.owedAmount), 0));
+      const totalAmountRound = Math.round(Number(totalAmount));
+      
+      if (sumOfSplits !== totalAmountRound) {
+        return reply.code(400).send({ success: false, code: 'MATH_MISMATCH', error: `Splits sum (${sumOfSplits}) does not match total amount (${totalAmountRound})` });
       }
 
       const expense = await prisma.$transaction(async (tx) => {
         const newExpense = await tx.expense.create({
           data: {
-            groupId, title, totalAmount, originalCurrency, paidBy, idempotencyKey,
+            groupId, categoryId, title, totalAmount, originalCurrency, paidBy, idempotencyKey,
+            createdBy: userId,
             splits: {
               create: splits.map((s: any) => ({
                 userId: s.userId, owedAmount: s.owedAmount,
@@ -53,8 +57,31 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
         return newExpense;
       });
 
+      // ── Trigger Notifications ──────────────────────────────────────────────────
+      try {
+        const payerUser = await prisma.user.findUnique({ where: { id: paidBy } });
+        const payerName = payerUser?.name || 'Someone';
+
+        const notifications = expense.splits
+          .filter(s => s.userId !== paidBy)
+          .map(s => ({
+            recipientId: s.userId,
+            referenceType: 'expense' as const,
+            title: 'New Expense',
+            message: `${payerName} added "${title}"`,
+            referenceId: expense.id
+          }));
+        
+        if (notifications.length > 0) {
+          await NotificationService.notifyBulk(notifications);
+        }
+      } catch (err) {
+        fastify.log.error('Notification failed for new expense', err);
+      }
+
       return reply.send({ success: true, data: expense });
     } catch (e) {
+      fastify.log.error(e);
       return reply.code(500).send({ success: false, code: 'SERVER_ERROR' });
     }
   });
@@ -62,7 +89,7 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
   // ── 2. Delete Expense (Soft Delete + Reversal) ────────────────────────────────
   fastify.delete('/:id', async (request, reply) => {
     const { id } = request.params as any;
-    const userId = (request as any).userId; // Simulated auth
+    const userId = (request as any).userId;
 
     try {
       const expense = await prisma.expense.findUnique({
@@ -73,57 +100,39 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
         return reply.code(404).send({ success: false, error: 'Not found' });
       }
 
-      // Check Authorization
       if (expense.paidBy !== userId && expense.createdBy !== userId) {
         return reply.code(403).send({ success: false, error: 'Unauthorized to delete' });
       }
 
       await prisma.$transaction(async (tx) => {
-        // 1. Soft Delete the expense
         await tx.expense.update({
           where: { id: expense.id },
           data: { deletedAt: new Date() }
         });
 
-        // 2. Reverse the balances EXACTLY as they were applied
         for (const split of expense.splits) {
           if (split.userId === expense.paidBy) continue;
-          // Refund User (increment what they deducted)
           await tx.balance.update({
             where: { userId_counterpartId: { userId: split.userId, counterpartId: expense.paidBy } },
             data: { netBalance: { increment: split.owedAmount } }
           });
-          // Deduct from Payer (decrement what they were credited)
           await tx.balance.update({
             where: { userId_counterpartId: { userId: expense.paidBy, counterpartId: split.userId } },
             data: { netBalance: { decrement: split.owedAmount } }
           });
         }
-
-        // 3. Write Audit Log
-        if (typeof (tx as any).auditLog !== 'undefined') {
-          await (tx as any).auditLog.create({
-            data: { 
-              entityId: expense.id, entityType: 'expense', 
-              action: 'delete', performedBy: userId 
-            }
-          });
-        }
       });
 
-      return reply.send({ success: true, message: 'Expense deleted and balances reversed' });
+      return reply.send({ success: true, message: 'Expense deleted' });
     } catch (e) {
       return reply.code(500).send({ success: false, error: 'Failed to delete' });
     }
   });
 
   // ── 3. Edit Expense ────────────────────────────────────────────────────────────
-  // Since modifying an expense changes the math entirely:
-  // We reverse the OLD splits, then apply the NEW splits atomically.
   fastify.patch('/:id', async (request, reply) => {
     const { id } = request.params as any;
     const userId = (request as any).userId;
-
     const { title, totalAmount, paidBy, splits } = request.body as any;
 
     try {
@@ -133,11 +142,14 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
 
       if (!oldExpense || oldExpense.deletedAt) return reply.code(404).send({ success: false });
 
-      const sumOfSplits = splits.reduce((acc: number, split: any) => acc + split.owedAmount, 0);
-      if (sumOfSplits !== totalAmount) return reply.code(400).send({ success: false, error: 'Math Mismatch' });
+      const sumOfSplits = Math.round(splits.reduce((acc: number, split: any) => acc + Number(split.owedAmount), 0));
+      const totalAmountRound = Math.round(Number(totalAmount));
+      
+      if (sumOfSplits !== totalAmountRound) {
+        return reply.code(400).send({ success: false, error: 'Math Mismatch' });
+      }
 
       await prisma.$transaction(async (tx) => {
-        // 1. Reverse OLD Balances
         for (const split of oldExpense.splits) {
           if (split.userId === oldExpense.paidBy) continue;
           await tx.balance.update({
@@ -150,7 +162,6 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
           });
         }
 
-        // 2. Delete OLD splits & Update Expense Data
         await tx.expenseSplit.deleteMany({ where: { expenseId: oldExpense.id } });
         
         await tx.expense.update({
@@ -166,7 +177,6 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
           }
         });
 
-        // 3. Apply NEW Balances
         for (const newSplit of splits) {
           if (newSplit.userId === paidBy) continue;
           await tx.balance.update({
@@ -178,9 +188,79 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
             data: { netBalance: { increment: newSplit.owedAmount } }
           });
         }
-      }, { isolationLevel: 'Serializable' });
+      });
 
       return reply.send({ success: true });
+    } catch (e) {
+      return reply.code(500).send({ success: false });
+    }
+  });
+
+  // GET /api/expenses/:id - Expense Details
+  fastify.get('/:id', async (request, reply) => {
+    const { id } = request.params as any;
+    try {
+      const expense = await prisma.expense.findUnique({
+        where: { id: Number(id) },
+        include: {
+          splits: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
+          payer: { select: { id: true, name: true, avatarUrl: true } },
+          category: true
+        }
+      });
+      if (!expense) return reply.code(404).send({ success: false });
+      return reply.send({ success: true, data: expense });
+    } catch (e) {
+      return reply.code(500).send({ success: false });
+    }
+  });
+
+  // POST /api/expenses/ocr - Story 21: Receipt OCR (Simulated)
+  fastify.post('/ocr', async (request, reply) => {
+    // In a real app, you'd use Tesseract or AWS TextTract/Google Vision here.
+    // For Story 21, we simulate a smart extraction.
+    return reply.send({
+      success: true,
+      data: {
+        title: 'Dinner at Blue Oak',
+        totalAmount: 12450, // $124.50
+        categoryId: 1, // Food
+        confidence: 0.95
+      }
+    });
+  });
+
+  // GET /api/expenses/:id/comments - List comments
+  fastify.get('/:id/comments', async (request, reply) => {
+    const { id } = request.params as any;
+    try {
+      const comments = await prisma.expenseComment.findMany({
+        where: { expenseId: Number(id) },
+        include: { user: { select: { id: true, name: true, avatarUrl: true } } },
+        orderBy: { createdAt: 'asc' }
+      });
+      return reply.send({ success: true, data: comments });
+    } catch (e) {
+      return reply.code(500).send({ success: false });
+    }
+  });
+
+  // POST /api/expenses/:id/comments - Add comment
+  fastify.post('/:id/comments', async (request, reply) => {
+    const userId = (request as any).userId;
+    const { id } = request.params as any;
+    const { text } = request.body as any;
+
+    try {
+      const comment = await prisma.expenseComment.create({
+        data: {
+          expenseId: Number(id),
+          userId,
+          commentText: text
+        }
+      });
+
+      return reply.send({ success: true, data: comment });
     } catch (e) {
       return reply.code(500).send({ success: false });
     }

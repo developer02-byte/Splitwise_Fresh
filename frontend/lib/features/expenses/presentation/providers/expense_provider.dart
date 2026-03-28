@@ -3,8 +3,9 @@ import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/offline/sqlite_queue.dart';
-// Note: Requires connectivity_plus provider in a real build
-// import '../../../core/network/connectivity_provider.dart';
+import '../../../../core/network/dio_provider.dart';
+import '../../../dashboard/presentation/providers/balance_provider.dart';
+import '../../../activity/presentation/providers/activity_provider.dart';
 
 part 'expense_provider.g.dart';
 
@@ -18,6 +19,8 @@ class ExpenseNotifier extends _$ExpenseNotifier {
   Future<void> submitExpense({
     required String title,
     required int totalCents,
+    required int groupId,
+    required int paidBy,
     required List<Map<String, dynamic>> splits,
   }) async {
     state = const AsyncLoading();
@@ -26,8 +29,8 @@ class ExpenseNotifier extends _$ExpenseNotifier {
       final payload = {
         'title': title,
         'totalAmount': totalCents,
-        'groupId': 1, // simulated group
-        'paidBy': 1,  // simulated user
+        'groupId': groupId,
+        'paidBy': paidBy,
         'originalCurrency': 'USD',
         'splits': splits,
         'idempotencyKey': idempotencyKey,
@@ -44,10 +47,16 @@ class ExpenseNotifier extends _$ExpenseNotifier {
       }
 
       // 2. Transmit immediately if online
-      final dio = Dio(BaseOptions(baseUrl: 'http://localhost:3000'));
-      await dio.post('/api/v1/expenses', data: payload);
+      final dio = ref.read(dioProvider);
+      final response = await dio.post('/api/expenses', data: payload);
       
-      // TODO: refresh Dashboard Balances Provider globally
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception(response.data['error'] ?? 'Failed to add expense');
+      }
+      
+      // Mute errors if we can't invalidate but usually this is fine
+      ref.invalidate(balanceNotifierProvider);
+      ref.invalidate(activityNotifierProvider);
     });
   }
 }

@@ -43,6 +43,13 @@ enum RecurrenceType {
   custom
 }
 
+enum FriendshipStatus {
+  pending
+  accepted
+  rejected
+  blocked
+}
+
 model User {
   id                   Int       @id @default(autoincrement())
   name                 String    @db.VarChar(100)
@@ -56,6 +63,12 @@ model User {
   avatarUrl            String?   @map("avatar_url") @db.VarChar(500)
   termsAcceptedAt      DateTime? @map("terms_accepted_at") @db.Timestamptz
   termsVersion         String?   @map("terms_version") @db.VarChar(20)
+  acceptedTermsAt      DateTime? @map("accepted_terms_at") @db.Timestamptz
+  acceptedTermsVersion String?   @map("accepted_terms_version") @db.VarChar(50)
+  timezone             String    @default("UTC") @db.VarChar(50)
+  pushToken            String?   @map("push_token") @db.VarChar(255)
+  lastSeenAt           DateTime? @map("last_seen_at") @db.Timestamptz
+  deletedAt            DateTime? @map("deleted_at") @db.Timestamptz
   createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   // Relations
@@ -74,6 +87,8 @@ model User {
   offlineQueueItems    OfflineQueue[]
   balancesAsUser       Balance[] @relation("UserBalance")
   balancesAsCounter    Balance[] @relation("CounterpartBalance")
+  friendsRequested     Friendship[] @relation("Requester")
+  friendsAddressing    Friendship[] @relation("Addressee")
 
   @@map("users")
 }
@@ -102,6 +117,8 @@ model Group {
   coverPhotoUrl      String?   @map("cover_photo_url") @db.VarChar(500)
   createdBy          Int       @map("created_by")
   groupCurrency      String    @default("USD") @map("group_currency") @db.Char(3)
+  simplifiedSettlement Boolean @default(true) @map("simplified_settlement")
+  settlementThreshold Int      @default(0) @map("settlement_threshold")
   defaultSplitType   SplitType @default(equal) @map("default_split_type")
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz
   deletedAt          DateTime? @map("deleted_at") @db.Timestamptz
@@ -135,6 +152,23 @@ model GroupMember {
   @@map("group_members")
 }
 
+model Friendship {
+  id          Int              @id @default(autoincrement())
+  requesterId Int              @map("requester_id")
+  addresseeId Int              @map("addressee_id")
+  status      FriendshipStatus @default(pending)
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+
+  requester   User             @relation("Requester", fields: [requesterId], references: [id])
+  addressee   User             @relation("Addressee", fields: [addresseeId], references: [id])
+
+  @@unique([requesterId, addresseeId])
+  @@index([requesterId, status])
+  @@index([addresseeId, status])
+  @@map("friendships")
+}
+
 model GroupDefaultSplit {
   id         Int       @id @default(autoincrement())
   groupId    Int       @map("group_id")
@@ -163,7 +197,6 @@ model GroupInvitation {
   group        Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
   inviter      User      @relation(fields: [invitedBy], references: [id])
 
-  // Partial index equivalent constraint in prisma is handled basically via index
   @@index([groupId, isRevoked, expiresAt])
   @@map("group_invites")
 }
@@ -306,7 +339,6 @@ model AuditLog {
 
   @@index([groupId, createdAt(sort: Desc)])
   @@index([actorId, createdAt(sort: Desc)])
-  // Note: specific entity search indexes handled manually if needed
   @@map("audit_log")
 }
 

@@ -1,90 +1,95 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/dio_provider.dart';
 
-class FriendMock {
+class FriendModel {
   final int id;
+  final int? friendshipId;
   final String name;
   final String email;
   final String? avatarUrl;
   final int netBalanceCents;
 
-  FriendMock({
+  FriendModel({
     required this.id,
+    this.friendshipId,
     required this.name,
     required this.email,
     this.avatarUrl,
     required this.netBalanceCents,
   });
 
-  factory FriendMock.fromJson(Map<String, dynamic> json) {
-    return FriendMock(
+  factory FriendModel.fromJson(Map<String, dynamic> json) {
+    return FriendModel(
       id: json['id'] as int,
+      friendshipId: json['friendshipId'] as int?,
       name: json['name'] as String,
       email: json['email'] as String,
       avatarUrl: json['avatarUrl'] as String?,
       netBalanceCents: json['netBalanceCents'] as int? ?? 0,
     );
   }
-
-  FriendMock copyWith({
-    int? id,
-    String? name,
-    String? email,
-    String? avatarUrl,
-    int? netBalanceCents,
-  }) {
-    return FriendMock(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      email: email ?? this.email,
-      avatarUrl: avatarUrl ?? this.avatarUrl,
-      netBalanceCents: netBalanceCents ?? this.netBalanceCents,
-    );
-  }
 }
 
-class FriendsNotifier extends AsyncNotifier<List<FriendMock>> {
+class FriendsNotifier extends AsyncNotifier<List<FriendModel>> {
   @override
-  Future<List<FriendMock>> build() async {
+  Future<List<FriendModel>> build() async {
     return _fetchFriends();
   }
 
-  Future<List<FriendMock>> _fetchFriends() async {
+  Future<List<FriendModel>> _fetchFriends() async {
     final dio = ref.read(dioProvider);
-    final response = await dio.get('/api/user/friends/balances');
-
-    if (response.statusCode == 200 && response.data['success'] == true) {
+    final response = await dio.get('/api/friends');
+    if (response.data['success'] == true) {
       final list = response.data['data'] as List<dynamic>;
-      return list.map((e) => FriendMock.fromJson(e as Map<String, dynamic>)).toList();
+      return list.map((e) => FriendModel.fromJson(e as Map<String, dynamic>)).toList();
     } else {
       throw Exception(response.data['error'] ?? 'Failed to load friends');
     }
   }
 
-  Future<void> addFriend(String name, String email) async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      final dio = ref.read(dioProvider);
-      final response = await dio.post('/api/user/friends', data: {
-        'name': name,
-        'email': email,
-      });
-
-      if (response.data['success'] == true) {
-        final currentList = state.value ?? [];
-        final newFriend = FriendMock.fromJson(response.data['data'] as Map<String, dynamic>);
-        return [newFriend, ...currentList];
-      } else {
-        throw Exception(response.data['error'] ?? 'Failed to add friend');
-      }
+  Future<void> sendFriendRequest({int? userId, String? email}) async {
+    final dio = ref.read(dioProvider);
+    await dio.post('/api/friends', data: {
+      if (userId != null) 'friendId': userId,
+      if (email != null) 'email': email,
     });
+    ref.invalidate(pendingRequestsProvider);
   }
 
-  Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() => _fetchFriends());
+  Future<void> handleFriendRequest(int friendshipId, String status) async {
+    final dio = ref.read(dioProvider);
+    await dio.patch('/api/friends/$friendshipId', data: {'status': status});
+    ref.invalidateSelf();
+    ref.invalidate(pendingRequestsProvider);
+  }
+
+  Future<void> removeFriend(int friendshipId) async {
+    final dio = ref.read(dioProvider);
+    await dio.delete('/api/friends/$friendshipId');
+    ref.invalidateSelf();
   }
 }
 
 final friendsNotifierProvider = 
-    AsyncNotifierProvider<FriendsNotifier, List<FriendMock>>(FriendsNotifier.new);
+    AsyncNotifierProvider<FriendsNotifier, List<FriendModel>>(FriendsNotifier.new);
+
+// Pending requests provider
+final pendingRequestsProvider = FutureProvider<List<dynamic>>((ref) async {
+  final dio = ref.read(dioProvider);
+  final response = await dio.get('/api/friends/pending');
+  if (response.data['success'] == true) {
+    return response.data['data'] as List<dynamic>;
+  }
+  return [];
+});
+
+// Search results provider
+final userSearchProvider = FutureProvider.family<List<dynamic>, String>((ref, query) async {
+  if (query.length < 2) return [];
+  final dio = ref.read(dioProvider);
+  final response = await dio.get('/api/friends/search', queryParameters: {'q': query});
+  if (response.data['success'] == true) {
+    return response.data['data'] as List<dynamic>;
+  }
+  return [];
+});

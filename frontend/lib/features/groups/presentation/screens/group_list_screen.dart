@@ -33,7 +33,7 @@ class GroupListScreen extends ConsumerWidget {
               child: Icon(Icons.add, color: Theme.of(context).colorScheme.primary),
             ),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Create Group Modal...')));
+              context.push('/groups/create');
             },
           ),
           const SizedBox(width: 8),
@@ -86,7 +86,7 @@ class GroupListScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: kSpacingXL),
                       ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () => context.push('/groups/create'),
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 56),
                         ),
@@ -118,7 +118,7 @@ class GroupListScreen extends ConsumerWidget {
                   color: Colors.transparent,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(20),
-                    onTap: () {},
+                    onTap: () => context.push('/groups/${group.id}'),
                     child: Padding(
                       padding: const EdgeInsets.all(kSpacingM),
                       child: Row(

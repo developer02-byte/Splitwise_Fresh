@@ -8,28 +8,35 @@ export interface Debt {
   amountCents: number;
 }
 
-export function simplifyDebts(transactions: Debt[]): Debt[] {
+/**
+ * Simplifies a list of transactions into the minimum possible number of payments.
+ * @param transactions - List of raw debts between users
+ * @param threshold - (Optional) Minimum amount in cents below which a debt is ignored
+ */
+export function simplifyDebts(transactions: Debt[], threshold: number = 0): Debt[] {
   // 1. Calculate net balances for every user
   const netBalances = new Map<number, number>();
 
   for (const t of transactions) {
     if (t.amountCents === 0) continue;
-    
-    // User sending money (-)
     netBalances.set(t.fromUserId, (netBalances.get(t.fromUserId) || 0) - t.amountCents);
-    
-    // User receiving money (+)
     netBalances.set(t.toUserId, (netBalances.get(t.toUserId) || 0) + t.amountCents);
   }
 
-  // 2. Separate into Debtors (-) and Creditors (+)
-  const debtors = Array.from(netBalances.entries())
-    .filter(([_, balance]) => balance < 0)
-    .sort((a, b) => a[1] - b[1]); // Sort most negative first (largest debtor)
+  // 2. Filter out balances below the threshold
+  // This helps avoid tiny 1-cent transfers in large groups
+  const activeBalances = Array.from(netBalances.entries())
+    .filter(([_, balance]) => Math.abs(balance) > threshold);
 
-  const creditors = Array.from(netBalances.entries())
+  const debtors = activeBalances
+    .filter(([_, balance]) => balance < 0)
+    .map(b => [b[0], b[1]] as [number, number])
+    .sort((a, b) => a[1] - b[1]);
+
+  const creditors = activeBalances
     .filter(([_, balance]) => balance > 0)
-    .sort((a, b) => b[1] - a[1]); // Sort most positive first (largest creditor)
+    .map(b => [b[0], b[1]] as [number, number])
+    .sort((a, b) => b[1] - a[1]);
 
   const simplifiedTransactions: Debt[] = [];
   
@@ -44,23 +51,20 @@ export function simplifyDebts(transactions: Debt[]): Debt[] {
     const creditorId = creditors[j][0];
     const creditorCredit = creditors[j][1];
 
-    // The settlement amount is the minimum of what debtor owes and creditor needs
-    const settleAmount = Math.min(debtorDebt, creditorCredit);
-    
-    // Record the explicit transaction
-    simplifiedTransactions.push({
-      fromUserId: debtorId,
-      toUserId: creditorId,
-      amountCents: settleAmount
-    });
+    const settleAmount = Math.round(Math.min(debtorDebt, creditorCredit));
+    if (settleAmount > 0) {
+      simplifiedTransactions.push({
+        fromUserId: debtorId,
+        toUserId: creditorId,
+        amountCents: settleAmount
+      });
+    }
 
-    // Update remaining balances
-    debtors[i][1] += settleAmount; // moves toward 0
+    debtors[i][1] += settleAmount; 
     creditors[j][1] -= settleAmount;
 
-    // Advance pointers if fully settled
-    if (debtors[i][1] === 0) i++;
-    if (creditors[j][1] === 0) j++;
+    if (Math.abs(debtors[i][1]) < 0.01) i++;
+    if (Math.abs(creditors[j][1]) < 0.01) j++;
   }
 
   return simplifiedTransactions;
