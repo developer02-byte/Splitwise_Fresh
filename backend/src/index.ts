@@ -1,8 +1,10 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
+import rateLimit from '@fastify/rate-limit';
 
 import authRoutes from './routes/auth';
+import { verifyAccessToken } from './routes/auth';
 import activityRoutes from './routes/activity';
 import expensesRoutes from './routes/expenses';
 import friendsRoutes from './routes/friends';
@@ -15,11 +17,22 @@ const fastify = Fastify({ logger: true });
 
 async function start() {
   // Setup Plugins
+  // CORS: allow configured origins, fall back to permissive defaults for dev
+  const allowedOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',')
+    : ['http://localhost', 'http://localhost:8080', 'http://127.0.0.1:8080', 'http://192.168.2.6:8080'];
+
   await fastify.register(cors, {
-    origin: ['http://localhost:8080', 'http://127.0.0.1:8080', 'http://192.168.2.6:8080'],
+    origin: allowedOrigins,
     credentials: true, // required for httpOnly cookies
   });
   await fastify.register(cookie);
+
+  // Global rate limit: 100 req/min per IP (auth routes override with stricter limits)
+  await fastify.register(rateLimit, {
+    max: 100,
+    timeWindow: '1 minute',
+  });
 
   fastify.decorateRequest('userId', null);
   fastify.addHook('onRequest', async (request, reply) => {
@@ -27,28 +40,24 @@ async function start() {
     if (request.method === 'OPTIONS') return;
 
     // Skip public routes
-    if (request.url.startsWith('/api/auth/login') || request.url.startsWith('/api/auth/signup') || request.url.startsWith('/api/currencies/rates')) {
+    if (request.url.startsWith('/api/auth/login') || request.url.startsWith('/api/auth/signup') || request.url.startsWith('/api/auth/refresh') || request.url.startsWith('/api/currencies/rates')) {
       return;
     }
-    
-    // Check Authorization header
+
+    // Check Authorization header for JWT
     const authHeader = request.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
-      if (token.startsWith('user_ID_')) {
-        const id = parseInt(token.substring(8), 10);
-        if (!isNaN(id)) {
-          (request as any).userId = id;
-          return;
-        }
+      try {
+        const decoded = verifyAccessToken(token);
+        (request as any).userId = decoded.sub;
+        return;
+      } catch {
+        return reply.code(401).send({ success: false, error: 'Invalid or expired token' });
       }
     }
 
-    // Default to fallback or reject (allowing fallback to 1 for robust testing if no token provided, but the prompt says 
-    // FORCE HEADERS, so we should reject 401. However, since we are incrementally fixing, let's reject 401)
-    if (!(request as any).userId) {
-      return reply.code(401).send({ success: false, error: 'Unauthorized' });
-    }
+    return reply.code(401).send({ success: false, error: 'Unauthorized' });
   });
 
   // Register all routes

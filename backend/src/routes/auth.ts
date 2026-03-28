@@ -1,56 +1,95 @@
 import { FastifyInstance } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
 
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
+const ACCESS_TOKEN_EXPIRY = '15m';
+const BCRYPT_ROUNDS = 12;
+
+export function signAccessToken(userId: number): string {
+  return jwt.sign({ sub: userId }, JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRY });
+}
+
+export function verifyAccessToken(token: string): { sub: number } {
+  return jwt.verify(token, JWT_SECRET) as { sub: number };
+}
+
+function hashRefreshToken(plain: string): string {
+  return crypto.createHash('sha256').update(plain).digest('hex');
+}
+
 export default async function authRoutes(fastify: FastifyInstance) {
-  
-  // POST /api/v1/auth/signup
-  fastify.post('/signup', async (request, reply) => {
+
+  // POST /api/auth/signup
+  fastify.post('/signup', {
+    config: { rateLimit: { max: 5, timeWindow: '1 minute' } }
+  }, async (request, reply) => {
     const { name, email, password } = request.body as any;
+
+    if (!name || !email || !password) {
+      return reply.code(400).send({ success: false, error: 'Name, email, and password are required' });
+    }
+
+    if (password.length < 6) {
+      return reply.code(400).send({ success: false, error: 'Password must be at least 6 characters' });
+    }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return reply.code(400).send({ success: false, code: 'AUTH_EXISTS', error: 'Email already registered' });
     }
 
-    // In a real app, hash password via bcrypt here
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
+
     const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        passwordHash: password, // simulate hash
-      }
+      data: { name, email, passwordHash: hashedPassword }
     });
 
-    const accessToken = `user_ID_${user.id}`;
+    const accessToken = signAccessToken(user.id);
     return reply.send({ success: true, data: { id: user.id, email: user.email, token: accessToken } });
   });
 
-  // POST /api/v1/auth/login
-  fastify.post('/login', async (request, reply) => {
+  // POST /api/auth/login
+  fastify.post('/login', {
+    config: { rateLimit: { max: 5, timeWindow: '1 minute' } }
+  }, async (request, reply) => {
     const { email, password } = request.body as any;
 
+    if (!email || !password) {
+      return reply.code(400).send({ success: false, error: 'Email and password are required' });
+    }
+
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.passwordHash !== password) {
+    if (!user || !user.passwordHash) {
       return reply.code(401).send({ success: false, code: 'AUTH_INVALID', error: 'Invalid credentials' });
     }
 
-    // Generate token encapsulating userId for simple verification
-    const accessToken = `user_ID_${user.id}`;
+    const passwordValid = await bcrypt.compare(password, user.passwordHash);
+    if (!passwordValid) {
+      return reply.code(401).send({ success: false, code: 'AUTH_INVALID', error: 'Invalid credentials' });
+    }
+
+    // Generate tokens
+    const accessToken = signAccessToken(user.id);
     const refreshTokenPlain = crypto.randomBytes(40).toString('hex');
+    const refreshTokenHashed = hashRefreshToken(refreshTokenPlain);
 
     await prisma.session.create({
       data: {
         userId: user.id,
-        refreshTokenHash: refreshTokenPlain, // simulate hash
+        refreshTokenHash: refreshTokenHashed,
+        userAgent: request.headers['user-agent'] || null,
+        ipAddress: request.ip || null,
         lastUsedAt: new Date(),
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
       }
     });
 
-    // Set HttpOnly Cookies as per Auth Contract
+    // Set HttpOnly Cookies
     reply.cookie('access_token', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -62,24 +101,76 @@ export default async function authRoutes(fastify: FastifyInstance) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      path: '/api/v1/auth/refresh', // Secure path mapping
+      path: '/api/auth/refresh',
       maxAge: 30 * 24 * 60 * 60 // 30 days
     });
 
-    return reply.send({ success: true, data: { user: { id: user.id, name: user.name, email: user.email }, token: accessToken } });
+    return reply.send({
+      success: true,
+      data: {
+        user: { id: user.id, name: user.name, email: user.email },
+        token: accessToken
+      }
+    });
   });
 
-  // POST /api/v1/auth/refresh
+  // POST /api/auth/refresh — rotate refresh token + issue new access token
   fastify.post('/refresh', async (request, reply) => {
-    // Logic to validate refresh cookie, rotate it, and issue new short-lived access_token.
-    return reply.send({ success: true, message: "Tokens rotated" });
+    const refreshToken = request.cookies.refresh_token;
+    if (!refreshToken) {
+      return reply.code(401).send({ success: false, error: 'No refresh token' });
+    }
+
+    const tokenHash = hashRefreshToken(refreshToken);
+    const session = await prisma.session.findUnique({ where: { refreshTokenHash: tokenHash } });
+
+    if (!session || session.expiresAt < new Date()) {
+      // Expired or invalid — clean up
+      if (session) await prisma.session.delete({ where: { id: session.id } });
+      reply.clearCookie('access_token');
+      reply.clearCookie('refresh_token', { path: '/api/auth/refresh' });
+      return reply.code(401).send({ success: false, error: 'Session expired' });
+    }
+
+    // Rotate: new refresh token, update session
+    const newRefreshPlain = crypto.randomBytes(40).toString('hex');
+    const newRefreshHash = hashRefreshToken(newRefreshPlain);
+
+    await prisma.session.update({
+      where: { id: session.id },
+      data: { refreshTokenHash: newRefreshHash, lastUsedAt: new Date() }
+    });
+
+    const newAccessToken = signAccessToken(session.userId);
+
+    reply.cookie('access_token', newAccessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60
+    });
+
+    reply.cookie('refresh_token', newRefreshPlain, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/api/auth/refresh',
+      maxAge: 30 * 24 * 60 * 60
+    });
+
+    return reply.send({ success: true, data: { token: newAccessToken } });
   });
 
-  // POST /api/v1/auth/logout
+  // POST /api/auth/logout — clear cookies + delete session
   fastify.post('/logout', async (request, reply) => {
-    // Clear cookies explicitly
+    const refreshToken = request.cookies.refresh_token;
+    if (refreshToken) {
+      const tokenHash = hashRefreshToken(refreshToken);
+      await prisma.session.deleteMany({ where: { refreshTokenHash: tokenHash } });
+    }
+
     reply.clearCookie('access_token');
-    reply.clearCookie('refresh_token', { path: '/api/v1/auth/refresh' });
-    return reply.send({ success: true, message: "Logged out" });
+    reply.clearCookie('refresh_token', { path: '/api/auth/refresh' });
+    return reply.send({ success: true, message: 'Logged out' });
   });
 }

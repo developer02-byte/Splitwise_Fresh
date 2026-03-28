@@ -11,7 +11,12 @@ class SocketNotifier extends _$SocketNotifier {
   @override
   IO.Socket build() {
     // 1. Initialize Socket.io connecting to Fastify
-    _socket = IO.io('http://192.168.2.6:3000', IO.OptionBuilder()
+    // In Docker: socket connects via the same origin (NGINX proxies /socket.io/)
+    // In local dev: connects to localhost:3000 directly
+    const socketUrl = String.fromEnvironment('API_URL', defaultValue: 'http://localhost:3000');
+    // Strip /api suffix if present — socket.io connects to the server root
+    final baseSocketUrl = socketUrl.replaceAll(RegExp(r'/api/?$'), '');
+    _socket = IO.io(baseSocketUrl, IO.OptionBuilder()
       .setTransports(['websocket']) 
       .disableAutoConnect()
       // Send HttpOnly cookies automatically attached by the browser/engine

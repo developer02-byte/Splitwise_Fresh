@@ -40,6 +40,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await auth.login(_emailController.text.trim(), _passwordController.text);
       }
       
+      // Router redirect guard will handle onboarding vs dashboard
       if (mounted) context.go('/dashboard');
       
     } catch (e) {

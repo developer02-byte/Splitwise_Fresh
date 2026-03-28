@@ -1,7 +1,8 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { FastifyInstance } from 'fastify';
 import { PrismaClient } from '@prisma/client';
-import cookie from 'cookie'; // Make sure to npm install cookie
+import cookie from 'cookie';
+import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
 
@@ -27,9 +28,14 @@ export function setupSocketServer(fastify: FastifyInstance) {
 
       if (!token) return next(new Error("Authentication error: Missing token"));
 
-      // In production: const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      // For scaffold, simulate authenticated user ID extraction:
-      const userId = 1; 
+      // Verify JWT and extract userId
+      let userId: number;
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret') as { sub: number };
+        userId = decoded.sub;
+      } catch {
+        return next(new Error("Authentication error: Invalid token"));
+      }
 
       // Attach user object to socket for later event context
       (socket as any).userId = userId;

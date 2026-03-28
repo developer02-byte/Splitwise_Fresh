@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/dimensions.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/network/dio_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
@@ -20,23 +22,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       'title': 'Add your friends',
       'body': 'Connect with roommates, travel buddies, or your partner to easily keep track of shared expenses.',
       'icon': Icons.people_outline,
-      'color': const Color(0xFF6366F1), // Indigo
+      'color': const Color(0xFF6366F1),
     },
     {
       'title': 'Create a group',
       'body': 'Organize expenses by trip, apartment, or project. Everyone in the group can add expenses and see balances.',
       'icon': Icons.folder_shared_outlined,
-      'color': const Color(0xFF10B981), // Emerald
+      'color': const Color(0xFF10B981),
     },
     {
       'title': 'Settle up seamlessly',
       'body': 'SplitEase automatically simplifies complex debts. Tap one button to record a payment and get back to even.',
       'icon': Icons.payment_outlined,
-      'color': const Color(0xFFF59E0B), // Amber
+      'color': const Color(0xFFF59E0B),
     },
   ];
 
   Future<void> _completeOnboarding() async {
+    try {
+      final dio = ref.read(dioProvider);
+      await dio.put('/api/user/me', data: {'onboardingCompleted': true});
+      // Refresh auth state so router sees the updated flag
+      ref.invalidate(authNotifierProvider);
+    } catch (_) {}
     if (mounted) context.go('/dashboard');
   }
 
@@ -111,14 +119,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 },
               ),
             ),
-            
-            // ── Bottom Navigation Row ──
+
+            // Bottom Navigation Row
             Padding(
               padding: const EdgeInsets.all(kSpacingXXL),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Page Indicators
                   Row(
                     children: List.generate(
                       _pages.length,
@@ -128,16 +135,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         height: 8,
                         width: _currentPage == index ? 24 : 8,
                         decoration: BoxDecoration(
-                          color: _currentPage == index 
-                              ? Theme.of(context).colorScheme.primary 
+                          color: _currentPage == index
+                              ? Theme.of(context).colorScheme.primary
                               : Theme.of(context).colorScheme.primaryContainer,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
                     ),
                   ),
-                  
-                  // Next / Get Started Button
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primary,

@@ -37,7 +37,8 @@ class AuthNotifier extends AsyncNotifier<Map<String, dynamic>?> {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('auth_token', data['token'] as String);
         }
-        return data;
+        // Fetch full user profile (includes onboardingCompleted)
+        return await _fetchCurrentUser();
       } else {
         throw Exception(response.data['error'] ?? 'Login failed');
       }
@@ -61,7 +62,8 @@ class AuthNotifier extends AsyncNotifier<Map<String, dynamic>?> {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('auth_token', data['token'] as String);
         }
-        return data;
+        // Fetch full user profile (includes onboardingCompleted)
+        return await _fetchCurrentUser();
       } else {
         throw Exception(response.data['error'] ?? 'Registration failed');
       }

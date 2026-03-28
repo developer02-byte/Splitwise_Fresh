@@ -2,37 +2,40 @@
 FROM debian:latest AS build-env
 
 # Install OS dependencies
-RUN apt-get update 
-RUN apt-get install -y curl git wget unzip libgconf-2-4 gdb libstdc++6 libglu1-mesa fonts-droid-fallback lib32stdc++6 python3 xz-utils
-RUN apt-get clean
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       ca-certificates curl git wget unzip libstdc++6 libglu1-mesa fonts-droid-fallback python3 xz-utils \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Clone Flutter repository and set path
-RUN git clone https://github.com/flutter/flutter.git /usr/local/flutter
+# Pin to 3.27.4 to match CI/CD and avoid breaking API changes
+RUN git clone --depth 1 --branch 3.27.4 https://github.com/flutter/flutter.git /usr/local/flutter
 ENV PATH="/usr/local/flutter/bin:/usr/local/flutter/bin/cache/dart-sdk/bin:${PATH}"
 
-# Force use of a stable channel branch for production
-RUN flutter channel stable && flutter upgrade
+# Pre-cache Flutter web artifacts
+RUN flutter precache --web
 
 # Setup working directory
 WORKDIR /app
-COPY . .
-
-# Run pub get and build web output
+COPY pubspec.yaml pubspec.lock* ./
 RUN flutter pub get
 
-# Generate Riverpod/Freezed codegen files if any exist natively. Since we manually skipped in dev, this ensures the production build is perfectly compiled.
-RUN flutter packages pub run build_runner build --delete-conflicting-outputs || true
+# Copy rest of source
+COPY . .
+
+# Generate Riverpod/Freezed codegen files
+RUN dart run build_runner build --delete-conflicting-outputs || true
+
+# Build arg for API URL — passed from docker-compose
+ARG API_URL=http://localhost/api
 
 # Compile to static HTML/JS/CSS web artifacts
-# (Use CanvasKit renderer natively for high fidelity rendering)
-RUN flutter build web --web-renderer canvaskit --release
+RUN flutter build web --web-renderer canvaskit --release \
+    --dart-define=API_URL=$API_URL
 
-# ── Production Image (NGINX Hosting) ──
+# ── Production Image (NGINX serving frontend + reverse proxy) ──
 FROM nginx:alpine AS production
 COPY --from=build-env /app/build/web /usr/share/nginx/html
 
-# Expose Nginx Port
 EXPOSE 80
-
-# Run
 CMD ["nginx", "-g", "daemon off;"]

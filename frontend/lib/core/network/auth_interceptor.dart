@@ -4,13 +4,20 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Dio interceptor for handling 401 Unauthorized errors and automatically
 /// attaching JWT tokens.
-class AuthInterceptor extends Interceptor {
+///
+/// Uses QueuedInterceptor to properly await async operations like
+/// SharedPreferences reads before sending requests.
+class AuthInterceptor extends QueuedInterceptor {
   final Dio dio;
+  bool _isRefreshing = false;
 
   AuthInterceptor(this.dio);
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+  Future<void> onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
@@ -20,22 +27,28 @@ class AuthInterceptor extends Interceptor {
     } catch (e) {
       log('Error reading token: $e', name: 'AuthInterceptor');
     }
-    return handler.next(options);
+    handler.next(options);
   }
 
   @override
-  void onError(DioException err, ErrorInterceptorHandler handler) async {
-    if (err.response?.statusCode == 401) {
+  Future<void> onError(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    // Only attempt refresh for 401s, and not if we're already refreshing
+    // or if this IS the refresh request itself
+    if (err.response?.statusCode == 401 &&
+        !_isRefreshing &&
+        !err.requestOptions.path.contains('/auth/refresh')) {
+      _isRefreshing = true;
       log('HTTP 401: Attempting silent refresh...', name: 'AuthInterceptor');
-      
+
       try {
-        // Since tokens are stored in HttpOnly cookies, we just hit the refresh
-        // endpoint. The browser/cookie_jar handles sending the refresh_token cookie.
         final refreshResponse = await dio.post('/api/auth/refresh');
-        
+
         if (refreshResponse.statusCode == 200) {
-          // Token rotated successfully (new cookie received). 
-          // Re-attempt original request.
+          _isRefreshing = false;
+          // Re-attempt original request
           final opts = err.requestOptions;
           final cloneReq = await dio.request(
             opts.path,
@@ -50,10 +63,11 @@ class AuthInterceptor extends Interceptor {
         }
       } catch (e) {
         log('Refresh Failed. Forcing logout.', name: 'AuthInterceptor');
-        // TODO: Dispatch logout event to GoRouter / Riverpod
+      } finally {
+        _isRefreshing = false;
       }
     }
-    
-    return handler.next(err);
+
+    handler.next(err);
   }
 }

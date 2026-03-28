@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
+import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../../shared/widgets/layout/scaffold_with_nav_bar.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -21,17 +22,31 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final isAuth = authState.value != null;
       final isLoggingIn = state.matchedLocation == '/login';
+      final isOnboarding = state.matchedLocation == '/onboarding';
 
       if (!isAuth && !isLoggingIn) return '/login';
-      if (isAuth && isLoggingIn) return '/dashboard';
-      
+      if (isAuth && isLoggingIn) {
+        // Check if onboarding is completed
+        final onboardingCompleted = authState.value?['onboardingCompleted'] == true;
+        if (!onboardingCompleted) return '/onboarding';
+        return '/dashboard';
+      }
+      if (isAuth && !isOnboarding) {
+        final onboardingCompleted = authState.value?['onboardingCompleted'] == true;
+        if (!onboardingCompleted && state.matchedLocation != '/onboarding') return '/onboarding';
+      }
+
       return null; // Let the route pass
     },
-    
+
     routes: [
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
       ),
       
       // ShellRoute wraps the inner pages with the persistent Bottom Navigation Bar

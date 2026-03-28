@@ -4,10 +4,23 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // Redis connection config (required by BullMQ)
-const redisConnection = {
-  host: process.env.REDIS_HOST || '127.0.0.1',
-  port: Number(process.env.REDIS_PORT) || 6379,
-};
+// Parses REDIS_URL (e.g. redis://redis:6379) or falls back to host/port env vars
+function getRedisConnection() {
+  const redisUrl = process.env.REDIS_URL;
+  if (redisUrl) {
+    const parsed = new URL(redisUrl);
+    return {
+      host: parsed.hostname,
+      port: Number(parsed.port) || 6379,
+    };
+  }
+  return {
+    host: process.env.REDIS_HOST || '127.0.0.1',
+    port: Number(process.env.REDIS_PORT) || 6379,
+  };
+}
+
+const redisConnection = getRedisConnection();
 
 // ─────────────────────────────────────────────
 // 1. QUEUE DEFINITIONS

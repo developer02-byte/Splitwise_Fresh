@@ -10,7 +10,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
     try {
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { id: true, name: true, email: true, avatarUrl: true, defaultCurrency: true }
+        select: { id: true, name: true, email: true, avatarUrl: true, defaultCurrency: true, onboardingCompleted: true }
       });
       if (!user) return reply.code(404).send({ success: false, code: 'NOT_FOUND' });
       return reply.send({ success: true, data: user });
@@ -22,12 +22,12 @@ export default async function userRoutes(fastify: FastifyInstance) {
   // PUT /api/user/me — update profile
   fastify.put('/me', async (request, reply) => {
     const userId = (request as any).userId;
-    const { name, defaultCurrency } = request.body as any;
+    const { name, defaultCurrency, onboardingCompleted } = request.body as any;
     try {
       const updated = await prisma.user.update({
         where: { id: userId },
-        data: { name, defaultCurrency },
-        select: { id: true, name: true, email: true, defaultCurrency: true }
+        data: { name, defaultCurrency, onboardingCompleted },
+        select: { id: true, name: true, email: true, defaultCurrency: true, onboardingCompleted: true }
       });
       return reply.send({ success: true, data: updated });
     } catch (e) {
