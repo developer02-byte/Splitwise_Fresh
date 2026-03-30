@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'core/network/dio_provider.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
@@ -86,8 +89,72 @@ final _routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-class _SplashScreen extends StatelessWidget {
+class _SplashScreen extends ConsumerStatefulWidget {
   const _SplashScreen();
+  @override
+  ConsumerState<_SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends ConsumerState<_SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _checkVersion();
+  }
+
+  Future<void> _checkVersion() async {
+    if (kIsWeb) return; // Skip version check on web for now
+    
+    try {
+      final dio = ref.read(dioProvider);
+      final packageInfo = await PackageInfo.fromPlatform();
+      final currentVersion = packageInfo.version;
+
+      final res = await dio.get('/api/app/version/check', headers: {
+        'x-platform': Theme.of(context).platform == TargetPlatform.android ? 'android' : 'ios',
+      });
+
+      if (res.data['success'] == true) {
+        final data = res.data['data'];
+        final minVersion = data['min_version'] as String;
+        final forceUpdate = data['force_update'] as bool;
+
+        if (forceUpdate || _isVersionBelow(currentVersion, minVersion)) {
+           _showUpdateDialog(data['update_url'] as String);
+        }
+      }
+    } catch (e) {
+      // Ignore version check errors to not block startup
+    }
+  }
+
+  bool _isVersionBelow(String current, String min) {
+    final curParts = current.split('.').map(int.parse).toList();
+    final minParts = min.split('.').map(int.parse).toList();
+    for (var i = 0; i < 3; i++) {
+      if (curParts[i] < minParts[i]) return true;
+      if (curParts[i] > minParts[i]) return false;
+    }
+    return false;
+  }
+
+  void _showUpdateDialog(String url) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Update Required'),
+        content: const Text('A new version of SplitEase is available. Please update to continue using the app.'),
+        actions: [
+          TextButton(
+            onPressed: () { /* Launch URL */ },
+            child: const Text('Update Now'),
+          )
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;

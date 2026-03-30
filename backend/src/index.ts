@@ -17,8 +17,38 @@ import legalRoutes from './routes/legal';
 import notificationsRoutes from './routes/notifications';
 import categoryRoutes from './routes/categories';
 import searchRoutes from './routes/search';
+import healthRoutes from './routes/health';
+import versionRoutes from './routes/version';
+import traceIdPlugin from './plugins/trace_id';
+import metricsPlugin from './plugins/metrics';
 
-const fastify = Fastify({ logger: true });
+const fastify = Fastify({ 
+  logger: {
+    level: process.env.LOG_LEVEL || 'info',
+    serializers: {
+      req(request: any) {
+        return {
+          method: request.method,
+          url: request.url,
+          hostname: request.hostname,
+          trace_id: request.traceId,
+        };
+      },
+      res(reply: any) {
+        return { statusCode: reply.statusCode };
+      },
+    },
+    redact: {
+      paths: [
+        'req.headers.authorization',
+        'req.headers.cookie',
+        'req.body.password',
+        'req.body.token',
+      ],
+      censor: '[REDACTED]',
+    },
+  } 
+});
 
 async function start() {
   // Setup Plugins
@@ -32,6 +62,9 @@ async function start() {
     credentials: true, // required for httpOnly cookies
   });
   await fastify.register(cookie);
+  
+  await fastify.register(traceIdPlugin);
+  await fastify.register(metricsPlugin, { prefix: '/api' });
 
   // Global rate limit: 100 req/min per IP (auth routes override with stricter limits)
   await fastify.register(rateLimit, {
@@ -45,7 +78,7 @@ async function start() {
     if (request.method === 'OPTIONS') return;
 
     // Skip public routes
-    if (request.url.startsWith('/api/auth/login') || request.url.startsWith('/api/auth/signup') || request.url.startsWith('/api/auth/refresh') || request.url.startsWith('/api/currencies/rates')) {
+    if (request.url.startsWith('/api/auth/login') || request.url.startsWith('/api/auth/signup') || request.url.startsWith('/api/auth/refresh') || request.url.startsWith('/api/currencies/rates') || request.url.startsWith('/api/health') || request.url.startsWith('/api/version/check') || request.url.startsWith('/api/metrics')) {
       return;
     }
 
@@ -80,6 +113,8 @@ async function start() {
   fastify.register(notificationsRoutes, { prefix: '/api/notifications' });
   fastify.register(categoryRoutes, { prefix: '/api/categories' });
   fastify.register(searchRoutes, { prefix: '/api/search' });
+  fastify.register(healthRoutes, { prefix: '/api/health' });
+  fastify.register(versionRoutes, { prefix: '/api/version' });
   
   // Also register currencies for formatCurrency (mock)
   fastify.get('/api/currencies/rates', async (request, reply) => {

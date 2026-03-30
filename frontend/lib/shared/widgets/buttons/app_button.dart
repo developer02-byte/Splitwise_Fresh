@@ -86,25 +86,29 @@ class AppOutlineButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 48,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(kRadiusM),
+    return Semantics(
+      label: label,
+      button: true,
+      child: SizedBox(
+        height: 48,
+        child: OutlinedButton(
+          onPressed: onPressed,
+          style: OutlinedButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(kRadiusM),
+            ),
+            side: BorderSide(color: Theme.of(context).colorScheme.outline),
           ),
-          side: BorderSide(color: Theme.of(context).colorScheme.outline),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 18),
-              const SizedBox(width: kSpacingS),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 18),
+                const SizedBox(width: kSpacingS),
+              ],
+              Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
             ],
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-          ],
+          ),
         ),
       ),
     );

@@ -397,4 +397,63 @@ export default async function groupRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // GET /api/groups/:id/analytics - Story 35: Analytics & Insights
+  fastify.get('/:id/analytics', async (request, reply) => {
+    const { id } = request.params as any;
+    try {
+      const gId = Number(id);
+      
+      const categoryTotals = await prisma.expense.groupBy({
+        by: ['categoryId'],
+        where: { groupId: gId, deletedAt: null },
+        _sum: { totalAmount: true },
+        _count: { id: true }
+      });
+
+      // Join with category names
+      const categories = await prisma.expenseCategory.findMany();
+      const results = categoryTotals.map(ct => {
+        const cat = categories.find(c => c.id === ct.categoryId);
+        return {
+          categoryId: ct.categoryId,
+          categoryName: cat?.name || 'Uncategorized',
+          categoryIcon: cat?.icon || 'receipt_long',
+          totalAmount: ct._sum.totalAmount || 0,
+          count: ct._count.id
+        };
+      });
+
+      // Get leaderboard (who paid most)
+      const payerTotals = await prisma.expense.groupBy({
+        by: ['paidBy'],
+        where: { groupId: gId, deletedAt: null },
+        _sum: { totalAmount: true }
+      });
+
+      const users = await prisma.user.findMany({
+        where: { memberships: { some: { groupId: gId } } },
+        select: { id: true, name: true, avatarUrl: true }
+      });
+
+      const leaderboard = payerTotals.map(pt => {
+        const user = users.find(u => u.id === pt.paidBy);
+        return {
+          userId: pt.paidBy,
+          userName: user?.name || 'Unknown',
+          avatarUrl: user?.avatarUrl,
+          totalPaid: pt._sum.totalAmount || 0
+        };
+      }).sort((a, b) => b.totalPaid - a.totalPaid);
+
+      return reply.send({
+        success: true,
+        data: {
+          categoryBreakdown: results,
+          leaderboard
+        }
+      });
+    } catch (e) {
+      return reply.code(500).send({ success: false });
+    }
+  });
 }

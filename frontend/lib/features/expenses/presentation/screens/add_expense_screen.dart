@@ -29,6 +29,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   int _selectedGroup = 1;
   CategoryModel? _selectedCategory;
   SplitMode _splitMode = SplitMode.equal;
+  bool _isRecurring = false;
+  String _recurrenceType = 'monthly';
+  int _recurrenceDay = DateTime.now().day;
 
   final Map<int, TextEditingController> _exactControllers = {};
   final Map<int, TextEditingController> _percentControllers = {};
@@ -255,6 +258,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       paidBy: _selectedPayer,
       categoryId: _selectedCategory?.id ?? 0,
       splits: splitsList,
+      isRecurring: _isRecurring,
+      recurrenceType: _isRecurring ? _recurrenceType : null,
+      recurrenceDay: _isRecurring ? _recurrenceDay : null,
     ).then((_) {
       if (mounted && !ref.read(expenseNotifierProvider).hasError) {
         context.pop();
@@ -448,6 +454,66 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       ),
                     if (_splitMode == SplitMode.equal)
                       Center(child: Padding(padding: const EdgeInsets.all(24.0), child: Text('Split equally among ${_mockFriends.length} people.', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)))),
+                    
+                    const Divider(),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.repeat, color: _isRecurring ? Theme.of(context).colorScheme.primary : Colors.grey),
+                            const SizedBox(width: 12),
+                            Text('Make recurring', style: TextStyle(fontWeight: FontWeight.bold, color: _isRecurring ? Theme.of(context).colorScheme.primary : null)),
+                          ],
+                        ),
+                        Switch(
+                          value: _isRecurring,
+                          onChanged: (val) => setState(() => _isRecurring = val),
+                        ),
+                      ],
+                    ),
+                    if (_isRecurring)
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        margin: const EdgeInsets.only(top: 16),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Frequency'),
+                                DropdownButton<String>(
+                                  value: _recurrenceType,
+                                  items: const [
+                                    DropdownMenuItem(value: 'weekly', child: Text('Every Week')),
+                                    DropdownMenuItem(value: 'monthly', child: Text('Every Month')),
+                                  ],
+                                  onChanged: (val) => setState(() => _recurrenceType = val!),
+                                ),
+                              ],
+                            ),
+                            if (_recurrenceType == 'monthly')
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('On day of month'),
+                                  DropdownButton<int>(
+                                    value: _recurrenceDay,
+                                    items: List.generate(28, (i) => i + 1).map((d) => DropdownMenuItem(value: d, child: Text(d.toString()))).toList(),
+                                    onChanged: (val) => setState(() => _recurrenceDay = val!),
+                                  ),
+                                ],
+                              ),
+                          ],
+                        ),
+                      ),
+                    
                     const SizedBox(height: 100),
                   ],
                 ),

@@ -8,7 +8,10 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
   // ── 1. Create Expense ──────────────────────────────────────────────────────────
   fastify.post('/', async (request, reply) => {
     const userId = (request as any).userId; 
-    const { groupId, categoryId, title, totalAmount, originalCurrency, paidBy, splits, idempotencyKey } = request.body as any;
+    const { 
+      groupId, categoryId, title, totalAmount, originalCurrency, paidBy, splits, idempotencyKey,
+      isRecurring, recurrenceType, recurrenceDay
+    } = request.body as any;
 
     try {
       if (idempotencyKey) {
@@ -23,11 +26,22 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
         return reply.code(400).send({ success: false, code: 'MATH_MISMATCH', error: `Splits sum (${sumOfSplits}) does not match total amount (${totalAmountRound})` });
       }
 
+      // Calculate first due date if recurring
+      let nextDueDate: Date | null = null;
+      if (isRecurring) {
+        const now = new Date();
+        nextDueDate = new Date(now.getFullYear(), now.getMonth() + 1, recurrenceDay || now.getDate());
+      }
+
       const expense = await prisma.$transaction(async (tx) => {
         const newExpense = await tx.expense.create({
           data: {
             groupId, categoryId, title, totalAmount, originalCurrency, paidBy, idempotencyKey,
             createdBy: userId,
+            isRecurring: isRecurring || false,
+            recurrenceType,
+            recurrenceDay: recurrenceDay ? Number(recurrenceDay) : null,
+            nextDueDate,
             splits: {
               create: splits.map((s: any) => ({
                 userId: s.userId, owedAmount: s.owedAmount,
@@ -265,4 +279,84 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
       return reply.code(500).send({ success: false });
     }
   });
+
+  // POST /api/expenses/cron/recurring - Story 34: Auto-Generate Recurring
+  fastify.post('/cron/recurring', async (request, reply) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    try {
+      const templates = await prisma.expense.findMany({
+        where: {
+          isRecurring: true,
+          nextDueDate: { lte: today },
+          deletedAt: null
+        },
+        include: { splits: true }
+      });
+
+      let generatedCount = 0;
+      for (const t of templates) {
+        await prisma.$transaction(async (tx) => {
+          // 1. Create the new occurrence
+          const nextOccurDate = t.nextDueDate || today;
+          const newExpense = await tx.expense.create({
+            data: {
+              title: `${t.title} (${nextOccurDate.toLocaleString('default', { month: 'long' })})`,
+              totalAmount: t.totalAmount,
+              originalCurrency: t.originalCurrency,
+              groupId: t.groupId,
+              categoryId: t.categoryId,
+              paidBy: t.paidBy,
+              createdBy: t.createdBy,
+              recurringTemplateId: t.id, // Linked to template
+              splits: {
+                create: t.splits.map(s => ({
+                  userId: s.userId,
+                  owedAmount: s.owedAmount,
+                  paidAmount: s.userId === t.paidBy ? t.totalAmount : 0
+                }))
+              }
+            }
+          });
+
+          // 2. Update balances for the new occurrence
+          for (const s of t.splits) {
+             if (s.userId === t.paidBy) continue;
+             await tx.balance.upsert({
+               where: { userId_counterpartId: { userId: s.userId, counterpartId: t.paidBy } },
+               update: { netBalance: { decrement: s.owedAmount } },
+               create: { userId: s.userId, counterpartId: t.paidBy, netBalance: -s.owedAmount }
+             });
+             await tx.balance.upsert({
+               where: { userId_counterpartId: { userId: t.paidBy, counterpartId: s.userId } },
+               update: { netBalance: { increment: s.owedAmount } },
+               create: { userId: t.paidBy, counterpartId: s.userId, netBalance: s.owedAmount }
+             });
+          }
+
+          // 3. Increment next due date on template
+          const nextDate = new Date(t.nextDueDate || today);
+          if (t.recurrenceType === 'monthly') {
+            nextDate.setMonth(nextDate.getMonth() + 1);
+          } else if (t.recurrenceType === 'weekly') {
+            nextDate.setDate(nextDate.getDate() + 7);
+          }
+          // handle 'custom' etc...
+
+          await tx.expense.update({
+            where: { id: t.id },
+            data: { nextDueDate: nextDate }
+          });
+          generatedCount++;
+        });
+      }
+
+      return reply.send({ success: true, message: `Generated ${generatedCount} expenses.` });
+    } catch (e) {
+      fastify.log.error(e);
+      return reply.code(500).send({ success: false });
+    }
+  });
+
 }

@@ -5,6 +5,7 @@ import '../../../../core/constants/dimensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/group_provider.dart';
 import 'package:go_router/go_router.dart';
+import 'group_insights_screen.dart';
 
 final groupLedgerProvider = FutureProvider.family<List<dynamic>, int>((ref, id) async {
   final dio = ref.read(dioProvider);
@@ -29,6 +30,14 @@ class GroupDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(group?.name ?? 'Loading...'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.insights_outlined),
+            tooltip: 'View Insights',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (ctx) => GroupInsightsScreen(groupId: groupId, groupName: group?.name ?? 'Group'))
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.file_download_outlined),
             tooltip: 'Export CSV',
@@ -183,7 +192,16 @@ class _GroupHeroSummary extends StatelessWidget {
                color: net == 0 ? Colors.grey : (isNegative ? AppColors.error : AppColors.success),
                fontWeight: FontWeight.w700,
              ),
-           )
+           ),
+           const SizedBox(height: 16),
+           OutlinedButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (ctx) => GroupInsightsScreen(groupId: group!.id, groupName: group!.name))
+              ),
+              icon: const Icon(Icons.auto_graph),
+              label: const Text('Group Insights'),
+           ),
         ],
       )
     );
