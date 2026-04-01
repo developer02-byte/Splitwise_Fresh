@@ -5,11 +5,14 @@ workflows:
 
     environment:
       flutter: stable
+      xcode: latest
 
     scripts:
+      - name: Flutter doctor
+        script: flutter doctor
+
       - name: Install dependencies
-        script: |
-          flutter pub get
+        script: flutter pub get
 
       - name: Build iOS
         script: |
