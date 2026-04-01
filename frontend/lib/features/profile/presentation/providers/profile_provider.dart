@@ -15,6 +15,7 @@ class UserProfile {
     required this.name,
     required this.email,
     this.avatarUrl,
+    this.defaultCurrency = 'USD',
     this.provider = 'email',
     this.timezone = 'UTC',
   });
