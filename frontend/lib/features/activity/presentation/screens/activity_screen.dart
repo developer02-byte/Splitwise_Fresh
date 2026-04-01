@@ -7,6 +7,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../providers/activity_provider.dart';
 import '../../../expenses/presentation/providers/expense_action_provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
+import 'dart:typed_data';
+import '../../../../core/network/dio_provider.dart';
 
 class ActivityScreen extends ConsumerStatefulWidget {
   const ActivityScreen({super.key});
@@ -31,6 +34,11 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.file_download_outlined),
+            tooltip: 'Export Data',
+            onPressed: () => _showExportModal(context, ref),
+          ),
           IconButton(
             icon: Container(
               padding: const EdgeInsets.all(8),
@@ -490,5 +498,105 @@ class _ActivityFeedItem extends ConsumerWidget {
     if (diff.inDays == 1) return 'Yesterday';
     return '${diff.inDays}d ago';
   }
+  // Data Export Modal
+  void _showExportModal(BuildContext context, WidgetRef ref) {
+    String format = 'csv';
+    String range = 'all';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 24, right: 24, top: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Export Data', style: Theme.of(ctx).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              
+              Text('Format', style: Theme.of(ctx).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.grey)),
+              const SizedBox(height: 8),
+              SegmentedButton<String>(
+                segments: const [
+                   ButtonSegment(value: 'csv', label: Text('CSV')),
+                   ButtonSegment(value: 'json', label: Text('JSON')),
+                ],
+                selected: {format},
+                onSelectionChanged: (set) => setState(() => format = set.first),
+              ),
+              const SizedBox(height: 24),
+
+              Text('Time Range', style: Theme.of(ctx).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.grey)),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: range,
+                decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 16)),
+                items: const [
+                  DropdownMenuItem(value: 'all', child: Text('All Time')),
+                  DropdownMenuItem(value: 'month', child: Text('This Month')),
+                  DropdownMenuItem(value: 'custom', child: Text('Custom Range')),
+                ],
+                onChanged: (val) {
+                  if (val != null) setState(() => range = val);
+                },
+              ),
+              const SizedBox(height: 32),
+
+              ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  _performExport(context, ref, format, range);
+                },
+                icon: const Icon(Icons.download_rounded),
+                label: const Text('Export Now', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _performExport(BuildContext context, WidgetRef ref, String format, String range) async {
+    final dio = ref.read(dioProvider);
+    try {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Generating $format...'), duration: const Duration(seconds: 1)));
+
+      String url = '/api/export/user?format=$format';
+      if (range == 'month') {
+        final now = DateTime.now();
+        final firstDay = DateTime(now.year, now.month, 1);
+        url += '&from=\${firstDay.toIso8601String()}&to=\${now.toIso8601String()}';
+      }
+
+      final res = await dio.get(url);
+      if (res.statusCode == 200) {
+        final dataStr = format == 'csv' ? res.data as String : res.data.toString();
+        final bytes = Uint8List.fromList(dataStr.codeUnits);
+        
+        if (context.mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Export downloaded successfully! Opening share sheet...'), backgroundColor: AppColors.success));
+           await Share.shareXFiles([
+             XFile.fromData(bytes, name: 'SplitEase_Export.$format', mimeType: format == 'csv' ? 'text/csv' : 'application/json')
+           ], text: 'My SplitEase Export');
+        }
+      } else {
+        throw Exception('Failed from server');
+      }
+    } catch (e) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export failed: \$e'), backgroundColor: AppColors.error));
+    }
+  }
+
 }
 

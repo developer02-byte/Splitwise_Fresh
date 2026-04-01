@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'edit_expense_screen.dart';
+import '../providers/expense_provider.dart';
 import '../../../../core/network/dio_provider.dart';
 import '../../../../core/constants/dimensions.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -49,7 +52,22 @@ class _ExpenseDetailScreenState extends ConsumerState<ExpenseDetailScreen> {
     final commentsState = ref.watch(expenseCommentsProvider(widget.id));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Expense Details')),
+      appBar: AppBar(
+        title: const Text('Expense Details'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () => Navigator.push(
+               context,
+               MaterialPageRoute(builder: (ctx) => EditExpenseScreen(id: widget.id))
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: AppColors.error),
+            onPressed: () => _confirmDelete(context, ref),
+          ),
+        ],
+      ),
       body: stateInfo.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, st) => Center(child: Text(e.toString())),
@@ -262,6 +280,29 @@ class _ExpenseDetailScreenState extends ConsumerState<ExpenseDetailScreen> {
           );
         }
       )
+    );
+  }
+
+  void _confirmDelete(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Expense?'),
+        content: const Text('This will reverse all associated balances. Are you sure?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+             onPressed: () {
+                ref.read(expenseNotifierProvider.notifier).deleteExpense(widget.id).then((_) {
+                   Navigator.pop(ctx);
+                   context.pop();
+                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Expense deleted.')));
+                });
+             }, 
+             child: const Text('Delete', style: TextStyle(color: AppColors.error))
+          ),
+        ],
+      ),
     );
   }
 }

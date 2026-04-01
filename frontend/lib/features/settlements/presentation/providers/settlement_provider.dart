@@ -13,6 +13,7 @@ class SettlementNotifier extends AsyncNotifier<void> {
   Future<void> submitSettlement({
     required int payeeId,
     required int amountCents,
+    String currency = 'USD',
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
@@ -22,7 +23,7 @@ class SettlementNotifier extends AsyncNotifier<void> {
       final response = await dio.post('/api/settlements', data: {
         'payeeId': payeeId,
         'amountCents': amountCents,
-        'currency': 'USD',
+        'currency': currency,
         'groupId': 1, // Optional mock group
         'idempotencyKey': idempotencyKey,
       });

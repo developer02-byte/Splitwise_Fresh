@@ -25,6 +25,7 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
   final _amountController = TextEditingController();
   int? _selectedPayeeId;
   double _debtAmount = 0.0;
+  String _selectedCurrency = 'USD';
 
   @override
   void initState() {
@@ -92,7 +93,7 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
   
   void _processSettlement(int cents) {
     ref.read(settlementNotifierProvider.notifier)
-      .submitSettlement(payeeId: _selectedPayeeId!, amountCents: cents)
+      .submitSettlement(payeeId: _selectedPayeeId!, amountCents: cents, currency: _selectedCurrency)
       .then((_) {
          if (mounted && !ref.read(settlementNotifierProvider).hasError) {
            // Also refresh friends list to update balances
@@ -187,7 +188,15 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Text('\$', style: Theme.of(context).textTheme.displayMedium),
+                              DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _selectedCurrency,
+                                  items: ['USD', 'EUR', 'GBP', 'INR', 'JPY'].map((c) => DropdownMenuItem(value: c, child: Text(c, style: Theme.of(context).textTheme.headlineSmall))).toList(),
+                                  onChanged: (val) {
+                                    if (val != null) setState(() => _selectedCurrency = val);
+                                  },
+                                ),
+                              ),
                               const SizedBox(width: 8),
                               IntrinsicWidth(
                                 child: TextField(

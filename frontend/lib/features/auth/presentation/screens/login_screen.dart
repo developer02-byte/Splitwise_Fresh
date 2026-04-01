@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -177,7 +176,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                         
-                        if (!kIsWeb && Platform.isIOS) ...[
+                        if (!kIsWeb && Theme.of(context).platform == TargetPlatform.iOS) ...[
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
                             onPressed: () async {

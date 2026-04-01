@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../../shared/providers/upload_provider.dart';
 
 import '../../../../core/constants/dimensions.dart';
 import '../../domain/usecases/split_calculator.dart';
@@ -32,6 +34,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   bool _isRecurring = false;
   String _recurrenceType = 'monthly';
   int _recurrenceDay = DateTime.now().day;
+  String? _receiptUrl;
+  bool _isUploading = false;
 
   final Map<int, TextEditingController> _exactControllers = {};
   final Map<int, TextEditingController> _percentControllers = {};
@@ -261,6 +265,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       isRecurring: _isRecurring,
       recurrenceType: _isRecurring ? _recurrenceType : null,
       recurrenceDay: _isRecurring ? _recurrenceDay : null,
+      receiptUrl: _receiptUrl,
     ).then((_) {
       if (mounted && !ref.read(expenseNotifierProvider).hasError) {
         context.pop();
@@ -514,6 +519,16 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                         ),
                       ),
                     
+                    const Divider(),
+                    const SizedBox(height: 16),
+                    ListTile(
+                      leading: Icon(_receiptUrl != null ? Icons.check_circle : Icons.receipt_long, color: _receiptUrl != null ? Colors.green : null),
+                      title: Text(_receiptUrl != null ? 'Receipt attached' : 'Attach receipt'),
+                      trailing: _isUploading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.chevron_right),
+                      onTap: _isUploading ? null : () => _showImageSourceActionSheet(),
+                    ),
+                    const Divider(),
+                    
                     const SizedBox(height: 100),
                   ],
                 ),
@@ -537,5 +552,42 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         ),
       ),
     );
+  }
+
+  void _showImageSourceActionSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Camera'),
+              onTap: () { Navigator.pop(ctx); _onPickImage(ImageSource.camera); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Gallery'),
+              onTap: () { Navigator.pop(ctx); _onPickImage(ImageSource.gallery); },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onPickImage(ImageSource source) async {
+    final service = ref.read(uploadProvider);
+    final file = await service.pickImage(source);
+    if (file == null) return;
+
+    setState(() => _isUploading = true);
+    final result = await service.uploadFile(file, 'receipt');
+    setState(() {
+      _isUploading = false;
+      if (result != null) {
+        _receiptUrl = result['url'];
+      }
+    });
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/dio_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
+import 'personal_analytics_screen.dart';
 
 import '../../../../core/constants/dimensions.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -92,6 +93,12 @@ class ProfileScreen extends ConsumerWidget {
                   title: 'Timezone',
                   trailing: Text(profile.timezone, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
                   onTap: () => _showTimezonePicker(context, ref, profile),
+                ),
+                _SettingsTile(
+                  icon: Icons.insights_rounded,
+                  title: 'Personal Analytics',
+                  trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PersonalAnalyticsScreen())),
                 ),
                 _SettingsTile(
                   icon: Icons.notifications_rounded,
@@ -213,6 +220,7 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
+  void _showEditProfileDialog(BuildContext context, WidgetRef ref, dynamic profile) {
     final nameCtrl = TextEditingController(text: profile.name);
     final emailCtrl = TextEditingController(text: profile.email);
 

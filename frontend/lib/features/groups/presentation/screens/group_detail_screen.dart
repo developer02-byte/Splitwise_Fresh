@@ -6,6 +6,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../providers/group_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'group_insights_screen.dart';
+import 'package:share_plus/share_plus.dart';
+import 'dart:typed_data';
 
 final groupLedgerProvider = FutureProvider.family<List<dynamic>, int>((ref, id) async {
   final dio = ref.read(dioProvider);
@@ -108,13 +110,18 @@ class GroupDetailScreen extends ConsumerWidget {
   void _exportToCsv(BuildContext context, WidgetRef ref, int groupId) async {
     final dio = ref.read(dioProvider);
     try {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Generating CSV...'), duration: Duration(seconds: 1)));
       final res = await dio.get('/api/groups/$groupId/export');
       if (res.statusCode == 200) {
+        final dataStr = res.data as String;
+        final bytes = Uint8List.fromList(dataStr.codeUnits);
+
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             backgroundColor: AppColors.success,
-            content: Text('✓ Export started! SplitEase_Export.csv is downloading...'),
+            content: Text('✓ Export downloaded successfully! Opening share sheet...'),
           ));
+          await Share.shareXFiles([XFile.fromData(bytes, name: 'Group_\${groupId}_Export.csv', mimeType: 'text/csv')], text: 'Group \$groupId Export');
         }
       }
     } catch (e) {

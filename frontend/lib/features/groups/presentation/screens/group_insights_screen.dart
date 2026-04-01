@@ -1,203 +1,143 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'providers/group_analytics_provider.dart';
-import '../../../../core/constants/dimensions.dart';
-import '../../../../shared/widgets/category_icon.dart';
+import '../providers/group_analytics_provider.dart';
 
-class GroupInsightsScreen extends ConsumerWidget {
+class GroupInsightsScreen extends ConsumerStatefulWidget {
   final int groupId;
   final String groupName;
-
-  const GroupInsightsScreen({
-    super.key,
-    required this.groupId,
-    required this.groupName,
-  });
+  const GroupInsightsScreen({super.key, required this.groupId, required this.groupName});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final analyticsAsync = ref.watch(groupAnalyticsProvider(groupId));
+  ConsumerState<GroupInsightsScreen> createState() => _GroupInsightsScreenState();
+}
+
+class _GroupInsightsScreenState extends ConsumerState<GroupInsightsScreen> {
+  int touchedIndex = -1;
+
+  @override
+  Widget build(BuildContext context) {
+    final analyticsState = ref.watch(groupAnalyticsProvider(widget.groupId));
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('$groupName Insights'),
-      ),
-      body: analyticsAsync.when(
+      appBar: AppBar(title: Text('${widget.groupName} Insights')),
+      body: analyticsState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (data) => SingleChildScrollView(
-          padding: const EdgeInsets.all(kSpacingM),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Spending by Category',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: kSpacingM),
-              _CategoryBreakdownChart(data: data.categoryBreakdown),
-              const SizedBox(height: kSpacingL),
-              Text(
-                'Top Contributors',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: kSpacingM),
-              _LeaderboardList(data: data.leaderboard),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+        error: (err, _) => Center(child: Text('Error loading insights: $err')),
+        data: (data) {
+          if (data.spendingByCategory.isEmpty && data.leaderboard.isEmpty) {
+            return const Center(child: Text('No analytical data available yet.'));
+          }
 
-class _CategoryBreakdownChart extends StatelessWidget {
-  final List<CategoryBreakdown> data;
+          final totalSpent = data.spendingByCategory.fold(0.0, (sum, item) => sum + (item['totalCents'] / 100));
 
-  const _CategoryBreakdownChart({required this.data});
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Spending by Category', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 24),
+                if (data.spendingByCategory.isNotEmpty)
+                  SizedBox(
+                    height: 300,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        PieChart(
+                          PieChartData(
+                            pieTouchData: PieTouchData(
+                              touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                                setState(() {
+                                  if (!event.isInterestedForInteractions ||
+                                      pieTouchResponse == null ||
+                                      pieTouchResponse.touchedSection == null) {
+                                    touchedIndex = -1;
+                                    return;
+                                  }
+                                  touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                                });
+                              },
+                            ),
+                            borderData: FlBorderData(show: false),
+                            sectionsSpace: 2,
+                            centerSpaceRadius: 60,
+                            sections: List.generate(data.spendingByCategory.length, (i) {
+                              final item = data.spendingByCategory[i];
+                              final isTouched = i == touchedIndex;
+                              final radius = isTouched ? 60.0 : 50.0;
+                              final val = (item['totalCents'] / 100) as double;
+                              final pct = (val / totalSpent) * 100;
 
-  @override
-  Widget build(BuildContext context) {
-    if (data.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(kSpacingXL),
-          child: Text('No expense data available yet.'),
-        ),
-      );
-    }
+                              return PieChartSectionData(
+                                color: _colorFromHex(item['color'] ?? '#9E9E9E'),
+                                value: val,
+                                title: isTouched ? '\$${val.toStringAsFixed(0)}' : '${pct.toStringAsFixed(0)}%',
+                                radius: radius,
+                                titleStyle: TextStyle(
+                                  fontSize: isTouched ? 18.0 : 14.0,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              );
+                            }),
+                          ),
+                        ),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('Total'),
+                            Text('\$${totalSpent.toStringAsFixed(0)}', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
 
-    return AspectRatio(
-      aspectRatio: 1.3,
-      child: Row(
-        children: [
-          Expanded(
-            child: PieChart(
-              PieChartData(
-                sectionsSpace: 2,
-                centerSpaceRadius: 40,
-                sections: _getSections(),
-              ),
+                const SizedBox(height: 32),
+                
+                // Legend
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 8,
+                  children: data.spendingByCategory.map((item) {
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(width: 12, height: 12, decoration: BoxDecoration(color: _colorFromHex(item['color'] ?? '#9E9E9E'), shape: BoxShape.circle)),
+                        const SizedBox(width: 4),
+                        Text(item['categoryName'] ?? 'Uncategorized'),
+                      ],
+                    );
+                  }).toList(),
+                ),
+
+                const SizedBox(height: 48),
+                Text('Leaderboard (Who Paid Highest)', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 16),
+                
+                ...data.leaderboard.map((payer) {
+                  final amt = payer['totalPaidCents'] / 100 as double;
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(child: Text(payer['userName'][0] ?? '?')),
+                    title: Text(payer['userName']),
+                    trailing: Text('\$${amt.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  );
+                }).toList(),
+              ],
             ),
-          ),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: data.map((d) => _Indicator(
-              color: _getColor(d.categoryId),
-              text: d.categoryName,
-              isSquare: true,
-            )).toList(),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 
-  List<PieChartSectionData> _getSections() {
-    final total = data.fold<int>(0, (sum, item) => sum + item.totalAmount);
-    return data.asMap().entries.map((entry) {
-      final i = entry.key;
-      final d = entry.value;
-      final percentage = (d.totalAmount / total) * 100;
-
-      return PieChartSectionData(
-        color: _getColor(d.categoryId),
-        value: d.totalAmount.toDouble(),
-        title: '${percentage.toStringAsFixed(0)}%',
-        radius: 50,
-        titleStyle: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      );
-    }).toList();
-  }
-
-  Color _getColor(int id) {
-    final colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.red,
-      Colors.purple,
-      Colors.teal,
-      Colors.pink,
-      Colors.amber,
-    ];
-    return colors[id % colors.length];
-  }
-}
-
-class _LeaderboardList extends StatelessWidget {
-  final List<LeaderboardItem> data;
-
-  const _LeaderboardList({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: data.length,
-      separatorBuilder: (_, __) => const Divider(),
-      itemBuilder: (context, index) {
-        final item = data[index];
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundImage: item.avatarUrl != null ? NetworkImage(item.avatarUrl!) : null,
-            child: item.avatarUrl == null ? Text(item.userName[0]) : null,
-          ),
-          title: Text(item.userName),
-          trailing: Text(
-            '\$${(item.totalPaid / 100).toStringAsFixed(2)}',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _Indicator extends StatelessWidget {
-  final Color color;
-  final String text;
-  final bool isSquare;
-  final double size;
-  final Color? textColor;
-
-  const _Indicator({
-    required this.color,
-    required this.text,
-    required this.isSquare,
-    this.size = 16,
-    this.textColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: <Widget>[
-        Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: isSquare ? BoxShape.rectangle : BoxShape.circle,
-            color: color,
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: textColor,
-          ),
-        )
-      ],
-    );
+  Color _colorFromHex(String hexColor) {
+    hexColor = hexColor.replaceAll('#', '');
+    if (hexColor.length == 6) {
+      hexColor = 'FF$hexColor'; // Add alpha
+    }
+    return Color(int.parse(hexColor, radix: 16));
   }
 }
