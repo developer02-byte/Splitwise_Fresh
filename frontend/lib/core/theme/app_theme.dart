@@ -44,7 +44,7 @@ class AppTheme {
           return const IconThemeData(color: AppColors.textSecondaryLight, size: 26);
         }),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.surfaceLight,
         elevation: 0,
         margin: EdgeInsets.zero,
@@ -146,7 +146,7 @@ class AppTheme {
           return const IconThemeData(color: AppColors.textSecondaryDark, size: 26);
         }),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.surfaceDark,
         elevation: 0,
         margin: EdgeInsets.zero,
