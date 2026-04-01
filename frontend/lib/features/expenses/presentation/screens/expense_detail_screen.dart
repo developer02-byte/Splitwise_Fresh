@@ -88,8 +88,8 @@ class _ExpenseDetailScreenState extends ConsumerState<ExpenseDetailScreen> {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: isDark 
-                                ? [AppColors.primary500.withOpacity(0.2), AppColors.primary500.withOpacity(0.1)]
-                                : [AppColors.primary500.withOpacity(0.1), Colors.white],
+                                ? [AppColors.primary500.withValues(alpha: 0.2), AppColors.primary500.withValues(alpha: 0.1)]
+                                : [AppColors.primary500.withValues(alpha: 0.1), Colors.white],
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                           ),
@@ -101,7 +101,7 @@ class _ExpenseDetailScreenState extends ConsumerState<ExpenseDetailScreen> {
                                decoration: BoxDecoration(
                                  color: isDark ? Colors.white10 : Colors.white, 
                                  borderRadius: BorderRadius.circular(24), 
-                                 boxShadow: isDark ? [] : [BoxShadow(color: Colors.black12, blurRadius: 10)]
+                                 boxShadow: isDark ? [] : [const BoxShadow(color: Colors.black12, blurRadius: 10)]
                                ),
                                child: const Icon(Icons.receipt_long, size: 40, color: AppColors.primary500),
                              ),
@@ -119,7 +119,7 @@ class _ExpenseDetailScreenState extends ConsumerState<ExpenseDetailScreen> {
                              Row(
                                mainAxisAlignment: MainAxisAlignment.center,
                                children: [
-                                 CircleAvatar(radius: 12, backgroundColor: AppColors.primary500.withOpacity(0.5), child: const Icon(Icons.person, size: 14, color: Colors.white)),
+                                 CircleAvatar(radius: 12, backgroundColor: AppColors.primary500.withValues(alpha: 0.5), child: const Icon(Icons.person, size: 14, color: Colors.white)),
                                  const SizedBox(width: 8),
                                  Text(
                                    'Paid by $payer', 
@@ -173,7 +173,7 @@ class _ExpenseDetailScreenState extends ConsumerState<ExpenseDetailScreen> {
                     const SliverToBoxAdapter(child: SizedBox(height: kSpacingM)),
                     commentsState.when(
                       loading: () => const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator())),
-                      error: (e, __) => SliverToBoxAdapter(child: Center(child: Text('Error loading comments'))),
+                      error: (e, __) => const SliverToBoxAdapter(child: Center(child: Text('Error loading comments'))),
                       data: (comments) {
                         if (comments.isEmpty) {
                           return const SliverToBoxAdapter(
@@ -216,7 +216,7 @@ class _ExpenseDetailScreenState extends ConsumerState<ExpenseDetailScreen> {
                                           Container(
                                             padding: const EdgeInsets.all(12),
                                             decoration: BoxDecoration(
-                                              color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.withOpacity(0.1),
+                                              color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.withValues(alpha: 0.1),
                                               borderRadius: const BorderRadius.only(
                                                 bottomLeft: Radius.circular(12),
                                                 bottomRight: Radius.circular(12),
@@ -251,7 +251,7 @@ class _ExpenseDetailScreenState extends ConsumerState<ExpenseDetailScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: Theme.of(context).scaffoldBackgroundColor,
-                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: const Offset(0, -2))],
+                  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2))],
                 ),
                 child: Row(
                   children: [
@@ -262,7 +262,7 @@ class _ExpenseDetailScreenState extends ConsumerState<ExpenseDetailScreen> {
                           hintText: 'Type a message...',
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
                           filled: true,
-                          fillColor: isDark ? Colors.white10 : Colors.grey.withOpacity(0.1),
+                          fillColor: isDark ? Colors.white10 : Colors.grey.withValues(alpha: 0.1),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                         ),
                         onSubmitted: (_) => _postComment(),

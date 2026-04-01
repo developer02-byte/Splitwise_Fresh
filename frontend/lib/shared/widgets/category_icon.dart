@@ -38,7 +38,7 @@ class CategoryIcon extends StatelessWidget {
       width: size * 1.8,
       height: size * 1.8,
       decoration: BoxDecoration(
-        color: themeColor.withOpacity(0.1),
+        color: themeColor.withValues(alpha: 0.1),
         shape: BoxShape.circle,
       ),
       child: Center(

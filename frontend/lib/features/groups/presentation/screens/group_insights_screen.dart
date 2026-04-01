@@ -124,7 +124,7 @@ class _GroupInsightsScreenState extends ConsumerState<GroupInsightsScreen> {
                     title: Text(payer['userName']),
                     trailing: Text('\$${amt.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   );
-                }).toList(),
+                }),
               ],
             ),
           );

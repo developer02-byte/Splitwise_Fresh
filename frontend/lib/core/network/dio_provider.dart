@@ -7,7 +7,7 @@ final dioProvider = Provider<Dio>((ref) {
   // Always point to the backend server on port 3000.
   // On web, we must use an explicit URL (not empty string) to avoid
   // requests being sent to the Flutter dev server on port 8080.
-  final apiUrl = const String.fromEnvironment(
+  const apiUrl = String.fromEnvironment(
     'API_URL',
     defaultValue: 'http://localhost:3000',
   );

@@ -35,7 +35,7 @@ class AppTheme {
         elevation: 8,
         height: 65,
         backgroundColor: Colors.white,
-        indicatorColor: colorScheme.primary.withOpacity(0.1),
+        indicatorColor: colorScheme.primary.withValues(alpha: 0.1),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
@@ -44,13 +44,13 @@ class AppTheme {
           return const IconThemeData(color: AppColors.textSecondaryLight, size: 26);
         }),
       ),
-      cardTheme: CardThemeData(
+      cardTheme: CardTheme(
         color: AppColors.surfaceLight,
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: AppColors.borderLight.withOpacity(0.5), width: 1),
+          side: BorderSide(color: AppColors.borderLight.withValues(alpha: 0.5), width: 1),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -73,7 +73,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.error),
         ),
-        hintStyle: TextStyle(color: AppColors.textSecondaryLight),
+        hintStyle: const TextStyle(color: AppColors.textSecondaryLight),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -137,7 +137,7 @@ class AppTheme {
         elevation: 8,
         height: 65,
         backgroundColor: const Color(0xFF1E293B),
-        indicatorColor: colorScheme.primary.withOpacity(0.2),
+        indicatorColor: colorScheme.primary.withValues(alpha: 0.2),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
@@ -146,13 +146,13 @@ class AppTheme {
           return const IconThemeData(color: AppColors.textSecondaryDark, size: 26);
         }),
       ),
-      cardTheme: CardThemeData(
+      cardTheme: CardTheme(
         color: AppColors.surfaceDark,
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: AppColors.borderDark.withOpacity(0.5), width: 1),
+          side: BorderSide(color: AppColors.borderDark.withValues(alpha: 0.5), width: 1),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -175,7 +175,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.error),
         ),
-        hintStyle: TextStyle(color: AppColors.textSecondaryDark),
+        hintStyle: const TextStyle(color: AppColors.textSecondaryDark),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(

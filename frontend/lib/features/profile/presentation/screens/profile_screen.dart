@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/network/dio_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 import 'personal_analytics_screen.dart';
@@ -43,9 +42,9 @@ class ProfileScreen extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF1E293B) : Colors.white,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03)),
+                    border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03)),
                     boxShadow: [
-                      if (!isDark) BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 24, offset: const Offset(0, 12))
+                      if (!isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 24, offset: const Offset(0, 12))
                     ],
                   ),
                   child: Column(
@@ -54,7 +53,7 @@ class ProfileScreen extends ConsumerWidget {
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), width: 2),
+                          border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2), width: 2),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -71,7 +70,7 @@ class ProfileScreen extends ConsumerWidget {
                           label: const Text('Edit Identity', style: TextStyle(fontWeight: FontWeight.w600)),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
-                            side: BorderSide(color: isDark ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.1)),
+                            side: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.1)),
                           ),
                         ),
                       )
@@ -210,9 +209,9 @@ class ProfileScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03)),
+        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03)),
         boxShadow: [
-          if (!isDark) BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 15, offset: const Offset(0, 5))
+          if (!isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 15, offset: const Offset(0, 5))
         ],
       ),
       child: Column(
@@ -344,7 +343,7 @@ class ProfileScreen extends ConsumerWidget {
           final isMatch = verifyCtrl.text == 'DELETE';
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Text('Delete Account?', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
+            title: const Text('Delete Account?', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -432,7 +431,7 @@ class _SettingsTile extends StatelessWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
         if (showDivider)
-          Divider(height: 1, indent: 64, color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+          Divider(height: 1, indent: 64, color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05)),
       ],
     );
   }

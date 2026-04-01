@@ -86,8 +86,8 @@ class _PersonalAnalyticsScreenState extends ConsumerState<PersonalAnalyticsScree
                       Expanded(
                         child: LineChart(
                           LineChartData(
-                            gridData: FlGridData(show: true, drawVerticalLine: false),
-                            titlesData: FlTitlesData(
+                            gridData: const FlGridData(show: true, drawVerticalLine: false),
+                            titlesData: const FlTitlesData(
                               leftTitles: AxisTitles(
                                 sideTitles: SideTitles(showTitles: true, reservedSize: 40),
                               ),
@@ -109,10 +109,10 @@ class _PersonalAnalyticsScreenState extends ConsumerState<PersonalAnalyticsScree
                                 color: AppColors.primary500,
                                 barWidth: 3,
                                 isStrokeCapRound: true,
-                                dotData: FlDotData(show: false),
+                                dotData: const FlDotData(show: false),
                                 belowBarData: BarAreaData(
                                   show: true,
-                                  color: AppColors.primary500.withOpacity(0.1),
+                                  color: AppColors.primary500.withValues(alpha: 0.1),
                                 ),
                               ),
                             ],

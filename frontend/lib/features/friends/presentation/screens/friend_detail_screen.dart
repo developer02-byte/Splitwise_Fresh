@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/dimensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/friends_provider.dart';
 import '../../../../core/network/dio_provider.dart';
@@ -74,10 +73,10 @@ class FriendDetailScreen extends ConsumerWidget {
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-              color: heroColor.withOpacity(0.1),
+              color: heroColor.withValues(alpha: 0.1),
               child: Column(
                 children: [
-                  CircleAvatar(radius: 40, backgroundColor: heroColor.withOpacity(0.3), child: Text(friend.name.isNotEmpty ? friend.name[0] : '?', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: heroColor))),
+                  CircleAvatar(radius: 40, backgroundColor: heroColor.withValues(alpha: 0.3), child: Text(friend.name.isNotEmpty ? friend.name[0] : '?', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: heroColor))),
                   const SizedBox(height: 16),
                   Text(
                     isSettled ? "You're all settled up" : (youOwe ? 'You owe ${friend.name}' : '${friend.name} owes you'),

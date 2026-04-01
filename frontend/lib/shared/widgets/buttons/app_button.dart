@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// AppButton — Fully accessible, themed button component.
 /// All interactive elements must be >= 48dp tall (WCAG 2.1 AA).
@@ -39,7 +38,7 @@ class AppButton extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: color,
             foregroundColor: Colors.white,
-            disabledBackgroundColor: color.withOpacity(0.5),
+            disabledBackgroundColor: color.withValues(alpha: 0.5),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8.0),
             ),

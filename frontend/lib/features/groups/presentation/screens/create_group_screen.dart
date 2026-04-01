@@ -96,7 +96,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                        border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
                         borderRadius: BorderRadius.circular(8)
                       ),
                       child: DropdownButtonHideUnderline(
@@ -149,7 +149,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
               padding: const EdgeInsets.all(kSpacingL),
               decoration: BoxDecoration(
                 color: Theme.of(context).scaffoldBackgroundColor,
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))]
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,

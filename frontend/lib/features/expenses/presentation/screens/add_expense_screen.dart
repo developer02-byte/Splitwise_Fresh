@@ -372,7 +372,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -401,7 +401,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(border: Border.all(color: Colors.grey.withOpacity(0.3)), borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(border: Border.all(color: Colors.grey.withValues(alpha: 0.3)), borderRadius: BorderRadius.circular(8)),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<int>(
                           isExpanded: true,
@@ -485,7 +485,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                         margin: const EdgeInsets.only(top: 16),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.2),
+                          color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(
@@ -537,7 +537,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             ),
             Container(
               padding: const EdgeInsets.all(kSpacingL),
-              decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
+              decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))]),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 width: double.infinity, height: 56,

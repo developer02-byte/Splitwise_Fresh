@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "dev:local": "node start-dev.js",
-    "start": "tsx src/index.ts",
-    "build": "tsc --noEmit",
+    "start": "node dist/index.js",
+    "build": "tsc",
     "test": "vitest run --passWithNoTests"
   },
   "keywords": [],

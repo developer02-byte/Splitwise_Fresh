@@ -43,7 +43,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
             icon: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.filter_list_rounded, color: Theme.of(context).colorScheme.primary),
@@ -105,9 +105,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                         ref.read(activityNotifierProvider.notifier).applyFilter(filter);
                       },
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      side: BorderSide(color: isSelected ? Colors.transparent : (isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1))),
+                      side: BorderSide(color: isSelected ? Colors.transparent : (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.1))),
                       backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-                      selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                      selectedColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
                       checkmarkColor: Theme.of(context).colorScheme.primary,
                       labelStyle: TextStyle(color: isSelected ? Theme.of(context).colorScheme.primary : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight)),
                     ),
@@ -214,9 +214,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1E293B) : Colors.white,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03)),
+            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03)),
             boxShadow: [
-              if (!isDark) BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 24, offset: const Offset(0, 12))
+              if (!isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 24, offset: const Offset(0, 12))
             ],
           ),
           child: Column(
@@ -225,7 +225,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
               Container(
                 width: 80, height: 80,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.receipt_long_rounded, size: 40, color: Theme.of(context).colorScheme.primary),
@@ -348,7 +348,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         throw Exception('Failed from server');
       }
     } catch (e) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export failed: \$e'), backgroundColor: AppColors.error));
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Export failed: \$e'), backgroundColor: AppColors.error));
     }
   }
 }
@@ -375,7 +375,7 @@ class _ActivityFeedItem extends ConsumerWidget {
             ListTile(
               leading: Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                 child: Icon(Icons.edit_rounded, color: Theme.of(context).colorScheme.primary),
               ),
               title: const Text('Edit Expense', style: TextStyle(fontWeight: FontWeight.w600)),
@@ -387,10 +387,10 @@ class _ActivityFeedItem extends ConsumerWidget {
             ListTile(
               leading: Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: AppColors.error.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                child: Icon(Icons.delete_rounded, color: AppColors.error),
+                decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.delete_rounded, color: AppColors.error),
               ),
-              title: Text('Delete Expense', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
+              title: const Text('Delete Expense', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
               onTap: () {
                 Navigator.pop(ctx);
                 _confirmDelete(context, ref);
@@ -468,9 +468,9 @@ class _ActivityFeedItem extends ConsumerWidget {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03)),
+        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03)),
         boxShadow: [
-          if (!isDark) BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 15, offset: const Offset(0, 5))
+          if (!isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 15, offset: const Offset(0, 5))
         ],
       ),
       child: Material(
@@ -490,12 +490,12 @@ class _ActivityFeedItem extends ConsumerWidget {
                   height: 52,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [iconColor.withOpacity(0.2), iconColor.withOpacity(0.05)],
+                      colors: [iconColor.withValues(alpha: 0.2), iconColor.withValues(alpha: 0.05)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: iconColor.withOpacity(0.1)),
+                    border: Border.all(color: iconColor.withValues(alpha: 0.1)),
                   ),
                   child: Icon(iconData, color: iconColor, size: 28),
                 ),
@@ -543,7 +543,7 @@ class _ActivityFeedItem extends ConsumerWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: (item.youPaid ? AppColors.success : AppColors.error).withOpacity(0.1),
+                            color: (item.youPaid ? AppColors.success : AppColors.error).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(

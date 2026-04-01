@@ -85,7 +85,7 @@ class _SettleUpModalState extends ConsumerState<SettleUpModal> {
               height: 4,
               margin: const EdgeInsets.only(bottom: kSpacingL),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -99,7 +99,7 @@ class _SettleUpModalState extends ConsumerState<SettleUpModal> {
           Container(
             padding: const EdgeInsets.all(kSpacingL),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.5),
+              color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(kRadiusM),
             ),
             child: Column(

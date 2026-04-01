@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../../core/constants/dimensions.dart';
-import '../../../../core/theme/app_colors.dart';
 
 class DashboardSkeleton extends StatelessWidget {
   const DashboardSkeleton({super.key});

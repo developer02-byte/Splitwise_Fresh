@@ -1,28 +1,60 @@
 workflows:
-  ios-workflow:
-    name: iOS Workflow
+  android-workflow:
+    name: Android Build
     working_directory: frontend
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    environment:
+      flutter: 3.29.2
+      java: 17
+    scripts:
+      - name: Flutter clean
+        script: flutter clean
+      - name: Get dependencies
+        script: flutter pub get
+      - name: Analyze code
+        script: flutter analyze --no-fatal-warnings --no-fatal-infos
+      - name: Code Generation
+        script: dart run build_runner build --delete-conflicting-outputs
+      - name: Build Android App Bundle
+        script: flutter build appbundle --release
+      - name: Build Android APK
+        script: flutter build apk --release
+    artifacts:
+      - build/app/outputs/bundle/release/app-release.aab
+      - build/app/outputs/flutter-apk/app-release.apk
 
+  ios-workflow:
+    name: iOS Build
+    working_directory: frontend
+    max_build_duration: 120
+    instance_type: mac_mini_m1
     environment:
       flutter: 3.29.2
       xcode: latest
       cocoapods: default
-
     scripts:
       - name: Flutter clean
         script: flutter clean
-
       - name: Get dependencies
         script: flutter pub get
-
       - name: Install CocoaPods
         script: |
           cd ios
           pod install
-
-      - name: Build iOS Simulator
+      - name: Compile and Build iOS Simulator (No Signing)
         script: |
+          # Use this command to test iOS build successfully WITHOUT an Apple Developer account.
           flutter build ios --debug --simulator --no-codesign
-
+          
+          # ---------------------------------------------------------------------------------- #
+          # ⚠️ INSTRUCTIONS FOR PRODUCTION iOS BUILD (IPA) ⚠️                                  #
+          # 1. Provide your Apple Developer account in Codemagic UI:                             #
+          #    (Teams -> Personal -> Integrations -> Apple Developer Portal)                     #
+          # 2. Add 'xcode_project' and 'xcode_workspace' to 'ios' step if manual configs needed. #
+          # 3. Replace the above simulator build script with:                                    #
+          #    flutter build ipa --release                                                       #
+          # ---------------------------------------------------------------------------------- #
     artifacts:
       - build/ios/iphonesimulator/*.app
+      - build/ios/ipa/*.ipa

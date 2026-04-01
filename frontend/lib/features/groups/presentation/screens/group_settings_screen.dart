@@ -83,7 +83,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
               min: 0,
               max: 5000,
               divisions: 50,
-              label: '${(_threshold / 100).toStringAsFixed(2)}',
+              label: (_threshold / 100).toStringAsFixed(2),
               onChanged: (val) => setState(() => _threshold = val),
             ),
             const SizedBox(height: 32),

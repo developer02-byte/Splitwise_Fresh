@@ -37,13 +37,13 @@ class NotificationListScreen extends ConsumerWidget {
             onRefresh: () async => ref.refresh(notificationNotifierProvider),
             child: ListView.separated(
               itemCount: notifications.length,
-              separatorBuilder: (_, __) => Divider(height: 1, indent: 72, color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+              separatorBuilder: (_, __) => Divider(height: 1, indent: 72, color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05)),
               itemBuilder: (context, index) {
                 final n = notifications[index];
                 return ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: kSpacingL, vertical: 8),
                   leading: CircleAvatar(
-                    backgroundColor: n.read ? Colors.grey.withOpacity(0.2) : AppColors.primary500.withOpacity(0.2),
+                    backgroundColor: n.read ? Colors.grey.withValues(alpha: 0.2) : AppColors.primary500.withValues(alpha: 0.2),
                     child: Icon(
                       n.type.contains('settlement') ? Icons.payment : Icons.receipt_long,
                       color: n.read ? Colors.grey : AppColors.primary500,

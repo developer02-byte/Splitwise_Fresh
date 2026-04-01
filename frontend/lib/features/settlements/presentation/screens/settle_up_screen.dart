@@ -149,9 +149,9 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       decoration: BoxDecoration(
-                        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+                        border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
                         borderRadius: BorderRadius.circular(16),
-                        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1)
+                        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1)
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<int>(
@@ -178,7 +178,7 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(color: isOverpayment ? AppColors.error : Colors.transparent, width: 2)
                       ),
@@ -213,7 +213,7 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
                           ),
                           if (isOverpayment) ...[
                              const SizedBox(height: 8),
-                             Text('Overpayment! Max limit is \$${_debtAmount.toStringAsFixed(2)}', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600))
+                             Text('Overpayment! Max limit is \$${_debtAmount.toStringAsFixed(2)}', style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w600))
                           ]
                         ]
                       )
@@ -227,7 +227,7 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
               padding: const EdgeInsets.all(kSpacingL),
               decoration: BoxDecoration(
                 color: Theme.of(context).scaffoldBackgroundColor,
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))]
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,

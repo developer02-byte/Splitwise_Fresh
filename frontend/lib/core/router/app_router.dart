@@ -121,8 +121,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settle-up',
         builder: (context, state) {
-          final paramId = int.tryParse(state.uri.queryParameters['friendId'] ?? '') ?? null;
-          final paramAmt = double.tryParse(state.uri.queryParameters['amount'] ?? '') ?? null;
+          final paramId = int.tryParse(state.uri.queryParameters['friendId'] ?? '');
+          final paramAmt = double.tryParse(state.uri.queryParameters['amount'] ?? '');
           return SettleUpScreen(prefilledPayeeId: paramId, prefilledAmount: paramAmt);
         },
       ),

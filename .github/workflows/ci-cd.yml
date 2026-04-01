@@ -17,7 +17,10 @@ jobs:
         working-directory: backend
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout latest code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -25,11 +28,25 @@ jobs:
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
 
-      - name: Install deps
-        run: npm ci
+      - name: Clean install
+        working-directory: backend
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
 
-      - name: Build
-        run: npm run build
+      - name: Debug package.json
+        working-directory: backend
+        run: cat package.json
+
+      - name: Ensure TypeScript installed
+        working-directory: backend
+        run: |
+          npm install typescript --save-dev || true
+
+      - name: Compile TypeScript directly
+        working-directory: backend
+        run: |
+          npx tsc
 
       - name: Prisma generate
         run: npx prisma generate

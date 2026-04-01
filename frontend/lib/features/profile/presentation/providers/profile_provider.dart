@@ -91,7 +91,7 @@ class ProfileNotifier extends AsyncNotifier<UserProfile> {
         throw Exception(response.data['error'] ?? 'Failed to delete account');
       }
     } catch (e) {
-      if (e is Exception) throw e;
+      if (e is Exception) rethrow;
       throw Exception('An unknown error occurred');
     }
   }

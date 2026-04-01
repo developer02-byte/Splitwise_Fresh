@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,7 +7,6 @@ import '../../domain/usecases/split_calculator.dart';
 import '../providers/expense_provider.dart';
 import '../providers/category_provider.dart';
 import 'expense_detail_screen.dart';
-import '../../../../shared/widgets/category_icon.dart';
 
 enum SplitMode { equal, exact, percentage }
 

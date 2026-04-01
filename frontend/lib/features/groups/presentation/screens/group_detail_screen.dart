@@ -175,15 +175,15 @@ class _GroupHeroSummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(kSpacingL),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
-        border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.05)))
+        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+        border: Border(bottom: BorderSide(color: Colors.black.withValues(alpha: 0.05)))
       ),
       child: Column(
         children: [
            Container(
              width: 80, height: 80,
              decoration: BoxDecoration(
-               color: AppColors.primary500.withOpacity(0.1),
+               color: AppColors.primary500.withValues(alpha: 0.1),
                shape: BoxShape.circle,
              ),
              child: const Icon(Icons.group_outlined, size: 40, color: AppColors.primary500),

@@ -47,7 +47,7 @@ class DashboardScreen extends ConsumerWidget {
               top: -100, right: -50,
               child: Container(
                 width: 300, height: 300,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: Theme.of(context).colorScheme.primary.withOpacity(isDark ? 0.08 : 0.05)),
+                decoration: BoxDecoration(shape: BoxShape.circle, color: Theme.of(context).colorScheme.primary.withValues(alpha: isDark ? 0.08 : 0.05)),
               ),
             ),
             Positioned.fill(
@@ -101,8 +101,8 @@ class DashboardScreen extends ConsumerWidget {
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
                                 color: isPositive
-                                    ? AppColors.success.withOpacity(0.1)
-                                    : AppColors.error.withOpacity(0.1),
+                                    ? AppColors.success.withValues(alpha: 0.1)
+                                    : AppColors.error.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -205,7 +205,7 @@ class DashboardScreen extends ConsumerWidget {
                     padding: EdgeInsets.all(32.0),
                     child: CircularProgressIndicator(),
                   ))),
-                  error: (err, st) => SliverToBoxAdapter(child: Center(child: Text('Failed to load activity'))),
+                  error: (err, st) => const SliverToBoxAdapter(child: Center(child: Text('Failed to load activity'))),
                   data: (activity) {
                     final items = activity.items;
                     if (items.isEmpty) {

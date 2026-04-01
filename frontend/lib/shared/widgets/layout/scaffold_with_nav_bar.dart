@@ -200,7 +200,7 @@ class _SidebarItem extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: isSelected ? AppColors.primary500.withOpacity(0.1) : Colors.transparent,
+        color: isSelected ? AppColors.primary500.withValues(alpha: 0.1) : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(

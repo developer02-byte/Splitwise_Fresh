@@ -104,8 +104,9 @@ class ActivityNotifier extends AsyncNotifier<ActivityState> {
       if (cursor != null) 'cursor': cursor,
     };
 
-    if (filter == ActivityFilter.lent) params['role'] = 'lent';
-    else if (filter == ActivityFilter.borrowed) params['role'] = 'borrowed';
+    if (filter == ActivityFilter.lent) {
+      params['role'] = 'lent';
+    } else if (filter == ActivityFilter.borrowed) params['role'] = 'borrowed';
     else if (filter == ActivityFilter.expenses) params['type'] = 'expense';
     else if (filter == ActivityFilter.settlements) params['type'] = 'settlement';
     else params['filter'] = filter.name;
@@ -158,8 +159,9 @@ class ActivityNotifier extends AsyncNotifier<ActivityState> {
       };
       
       final filter = currentState.filter;
-      if (filter == ActivityFilter.lent) params['role'] = 'lent';
-      else if (filter == ActivityFilter.borrowed) params['role'] = 'borrowed';
+      if (filter == ActivityFilter.lent) {
+        params['role'] = 'lent';
+      } else if (filter == ActivityFilter.borrowed) params['role'] = 'borrowed';
       else if (filter == ActivityFilter.expenses) params['type'] = 'expense';
       else if (filter == ActivityFilter.settlements) params['type'] = 'settlement';
       else params['filter'] = filter.name;

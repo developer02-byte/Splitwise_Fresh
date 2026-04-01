@@ -136,7 +136,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           Container(
                             height: 56, width: 56,
                             decoration: BoxDecoration(
-                              color: AppColors.primary500.withOpacity(0.1),
+                              color: AppColors.primary500.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(16)
                             ),
                             child: const Icon(Icons.splitscreen_rounded, size: 32, color: AppColors.primary500),

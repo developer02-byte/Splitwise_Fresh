@@ -27,7 +27,7 @@ class GroupListScreen extends ConsumerWidget {
             icon: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.add, color: Theme.of(context).colorScheme.primary),
@@ -52,10 +52,10 @@ class GroupListScreen extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF1E293B) : Colors.white,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03)),
+                    border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03)),
                     boxShadow: [
                       if (!isDark)
-                        BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 24, offset: const Offset(0, 12))
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 24, offset: const Offset(0, 12))
                     ],
                   ),
                   child: Column(
@@ -64,7 +64,7 @@ class GroupListScreen extends ConsumerWidget {
                       Container(
                         width: 80, height: 80,
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(Icons.group_add_rounded, size: 40, color: Theme.of(context).colorScheme.primary),
@@ -109,9 +109,9 @@ class GroupListScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF1E293B) : Colors.white,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03)),
+                  border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03)),
                   boxShadow: [
-                    if (!isDark) BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5))
+                    if (!isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 15, offset: const Offset(0, 5))
                   ],
                 ),
                 child: Material(
@@ -126,7 +126,7 @@ class GroupListScreen extends ConsumerWidget {
                           Container(
                             width: 56, height: 56,
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Icon(Icons.group_rounded, color: Theme.of(context).colorScheme.primary),
