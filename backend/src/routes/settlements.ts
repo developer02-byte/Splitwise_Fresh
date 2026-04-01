@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { NotificationService } from '../services/notificationService';
+import { ExchangeRateService } from '../services/exchange_rate';
 
 const prisma = new PrismaClient();
 
@@ -17,6 +18,15 @@ export default async function settlementRoutes(fastify: FastifyInstance) {
         if (existing) return reply.send({ success: true, data: existing, message: "Idempotent hit" });
       }
 
+      // Currency Conversion logic
+      let exchangeRate = 1.0;
+      let amountUSD = amountCents;
+      if (currency && currency !== 'USD') {
+        const rates = await ExchangeRateService.getLatestRates(currency);
+        exchangeRate = rates['USD'] || 1.0;
+        amountUSD = Math.round(amountCents * exchangeRate);
+      }
+
       const settlement = await prisma.$transaction(async (tx) => {
         const currentBalance = await tx.balance.findUnique({
           where: { userId_counterpartId: { userId, counterpartId: payeeId } }
@@ -27,8 +37,8 @@ export default async function settlementRoutes(fastify: FastifyInstance) {
         }
         
         const debtCents = Math.abs(currentBalance.netBalance);
-        if (amountCents > debtCents) {
-          throw new Error(`Overpayment: You only owe ${debtCents}, tried to pay ${amountCents}`);
+        if (amountUSD > debtCents) {
+          throw new Error(`Overpayment: You only owe ${debtCents}, tried to pay ${amountUSD}`);
         }
 
         const newSettlement = await tx.settlement.create({
@@ -37,14 +47,14 @@ export default async function settlementRoutes(fastify: FastifyInstance) {
 
         await tx.balance.upsert({
           where: { userId_counterpartId: { userId, counterpartId: payeeId } },
-          update: { netBalance: { increment: amountCents } },
-          create: { userId, counterpartId: payeeId, netBalance: amountCents }
+          update: { netBalance: { increment: amountUSD } },
+          create: { userId, counterpartId: payeeId, netBalance: amountUSD }
         });
 
         await tx.balance.upsert({
           where: { userId_counterpartId: { userId: payeeId, counterpartId: userId } },
-          update: { netBalance: { decrement: amountCents } },
-          create: { userId: payeeId, counterpartId: userId, netBalance: -amountCents }
+          update: { netBalance: { decrement: amountUSD } },
+          create: { userId: payeeId, counterpartId: userId, netBalance: -amountUSD }
         });
 
         return newSettlement;
@@ -60,20 +70,20 @@ export default async function settlementRoutes(fastify: FastifyInstance) {
         const payerName = payerUser?.name || 'Someone';
 
         await NotificationService.notify({
-          userId: payeeId,
-          type: 'settlement',
+          recipientId: payeeId,
+          referenceType: 'settlement',
           title: 'Payment Received',
           message: `${payerName} paid you \$${(amountCents / 100).toFixed(2)}`,
-          relatedId: settlement.id
+          referenceId: settlement.id
         });
       } catch (err) {
-        fastify.log.error('Notification failed for settlement', err);
+        fastify.log.error({ err }, 'Notification failed for settlement');
       }
 
       return reply.send({ success: true, data: settlement });
 
     } catch (e) {
-      fastify.log.error(e, 'Settlement Transaction Failed:');
+      fastify.log.error({ err: e }, 'Settlement Transaction Failed:');
       return reply.code(400).send({ 
         success: false, 
         code: 'TRANSACTION_ABORTED',
@@ -127,11 +137,11 @@ export default async function settlementRoutes(fastify: FastifyInstance) {
         const payerName = payerUser?.name || 'Someone';
         
         const notifications = settled.map(s => ({
-          userId: s.payeeId,
-          type: 'settlement' as const,
+          recipientId: s.payeeId,
+          referenceType: 'settlement' as const,
           title: 'Full Settlement',
           message: `${payerName} settled all debts with you!`,
-          relatedId: s.id
+          referenceId: s.id
         }));
         
         if (notifications.length > 0) {

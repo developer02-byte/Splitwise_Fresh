@@ -1,0 +1,51 @@
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v5.22.0) to ./node_modules/@prisma/client in 1.83s
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Curious about the SQL queries Prisma ORM generates? Optimize helps you enhance your visibility: https://pris.ly/tip-2-optimize
+
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "splitease", schema "public" at "postgres:5432"
+
+🚀  Your database is now in sync with your Prisma schema. Done in 1.57s
+
+┌─────────────────────────────────────────────────────────┐
+│  Update available 5.22.0 -> 7.6.0                       │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘
+{"level":30,"time":1774688018353,"pid":195,"hostname":"2b453bfde338","msg":"Server listening at http://127.0.0.1:3000"}
+SplitEase Backend is running safely on port 3000!
+{"level":30,"time":1774688018354,"pid":195,"hostname":"2b453bfde338","msg":"Server listening at http://172.18.0.4:3000"}
+{"level":30,"time":1774688728919,"pid":195,"hostname":"2b453bfde338","reqId":"req-1","req":{"method":"GET","url":"/api/api/user/me","host":"localhost","remoteAddress":"172.18.0.5","remotePort":56514},"msg":"incoming request"}
+{"level":30,"time":1774688728999,"pid":195,"hostname":"2b453bfde338","reqId":"req-1","res":{"statusCode":401},"responseTime":74.29665100574493,"msg":"request completed"}
+{"level":30,"time":1774688729393,"pid":195,"hostname":"2b453bfde338","reqId":"req-2","req":{"method":"POST","url":"/api/api/auth/refresh","host":"localhost","remoteAddress":"172.18.0.5","remotePort":56514},"msg":"incoming request"}
+{"level":30,"time":1774688729396,"pid":195,"hostname":"2b453bfde338","reqId":"req-2","res":{"statusCode":401},"responseTime":2.696724995970726,"msg":"request completed"}
+{"level":30,"time":1774691461318,"pid":195,"hostname":"2b453bfde338","reqId":"req-3","req":{"method":"GET","url":"/health","host":"localhost:3000","remoteAddress":"172.18.0.1","remotePort":58522},"msg":"incoming request"}
+{"level":30,"time":1774691461374,"pid":195,"hostname":"2b453bfde338","reqId":"req-3","res":{"statusCode":401},"responseTime":36.06468999385834,"msg":"request completed"}
+{"level":30,"time":1774692412181,"pid":195,"hostname":"2b453bfde338","reqId":"req-4","req":{"method":"POST","url":"/api/api/auth/login","host":"localhost","remoteAddress":"172.18.0.5","remotePort":45304},"msg":"incoming request"}
+{"level":30,"time":1774692412211,"pid":195,"hostname":"2b453bfde338","reqId":"req-4","res":{"statusCode":401},"responseTime":12.383358001708984,"msg":"request completed"}
+{"level":30,"time":1774692412478,"pid":195,"hostname":"2b453bfde338","reqId":"req-5","req":{"method":"POST","url":"/api/api/auth/refresh","host":"localhost","remoteAddress":"172.18.0.5","remotePort":45304},"msg":"incoming request"}
+{"level":30,"time":1774692412488,"pid":195,"hostname":"2b453bfde338","reqId":"req-5","res":{"statusCode":401},"responseTime":7.626921996474266,"msg":"request completed"}
+{"level":30,"time":1774849159654,"pid":195,"hostname":"2b453bfde338","reqId":"req-6","req":{"method":"GET","url":"/api/api/user/me","host":"localhost","remoteAddress":"172.18.0.5","remotePort":44494},"msg":"incoming request"}
+{"level":30,"time":1774849159825,"pid":195,"hostname":"2b453bfde338","reqId":"req-6","res":{"statusCode":401},"responseTime":105.32573699951172,"msg":"request completed"}
+{"level":30,"time":1774849160196,"pid":195,"hostname":"2b453bfde338","reqId":"req-7","req":{"method":"POST","url":"/api/api/auth/refresh","host":"localhost","remoteAddress":"172.18.0.5","remotePort":44494},"msg":"incoming request"}
+{"level":30,"time":1774849160214,"pid":195,"hostname":"2b453bfde338","reqId":"req-7","res":{"statusCode":401},"responseTime":17.403901994228363,"msg":"request completed"}
+{"level":30,"time":1774849249267,"pid":195,"hostname":"2b453bfde338","reqId":"req-8","req":{"method":"POST","url":"/api/api/auth/login","host":"localhost","remoteAddress":"172.18.0.5","remotePort":59428},"msg":"incoming request"}
+{"level":30,"time":1774849249300,"pid":195,"hostname":"2b453bfde338","reqId":"req-8","res":{"statusCode":401},"responseTime":30.25993898510933,"msg":"request completed"}
+{"level":30,"time":1774849249756,"pid":195,"hostname":"2b453bfde338","reqId":"req-9","req":{"method":"POST","url":"/api/api/auth/refresh","host":"localhost","remoteAddress":"172.18.0.5","remotePort":59428},"msg":"incoming request"}
+{"level":30,"time":1774849249774,"pid":195,"hostname":"2b453bfde338","reqId":"req-9","res":{"statusCode":401},"responseTime":13.458100020885468,"msg":"request completed"}
+{"level":30,"time":1774863882804,"pid":195,"hostname":"2b453bfde338","reqId":"req-a","req":{"method":"GET","url":"/api/health","host":"localhost:3000","remoteAddress":"172.18.0.1","remotePort":48268},"msg":"incoming request"}
+{"level":30,"time":1774863882876,"pid":195,"hostname":"2b453bfde338","reqId":"req-a","res":{"statusCode":401},"responseTime":45.717272996902466,"msg":"request completed"}
+{"level":30,"time":1774863921779,"pid":195,"hostname":"2b453bfde338","reqId":"req-b","req":{"method":"GET","url":"/api/health/","host":"localhost:3000","remoteAddress":"172.18.0.1","remotePort":37980},"msg":"incoming request"}
+{"level":30,"time":1774863921787,"pid":195,"hostname":"2b453bfde338","reqId":"req-b","res":{"statusCode":401},"responseTime":6.587740004062653,"msg":"request completed"}
+{"level":30,"time":1774863924343,"pid":195,"hostname":"2b453bfde338","reqId":"req-c","req":{"method":"POST","url":"/api/auth/login","host":"localhost:3000","remoteAddress":"172.18.0.1","remotePort":37984},"msg":"incoming request"}
+{"level":50,"time":1774863924637,"pid":195,"hostname":"2b453bfde338","reqId":"req-c","req":{"method":"POST","url":"/api/auth/login","host":"localhost:3000","remoteAddress":"172.18.0.1","remotePort":37984},"res":{"statusCode":500},"err":{"type":"TypeError","message":"Cannot destructure property 'email' of 'request.body' as it is undefined.","stack":"TypeError: Cannot destructure property 'email' of 'request.body' as it is undefined.\n    at Object.<anonymous> (/app/src/routes/auth.ts:60:13)\n    at preHandlerCallbackInner (/app/node_modules/fastify/lib/handle-request.js:168:24)\n    at preHandlerCallback (/app/node_modules/fastify/lib/handle-request.js:134:5)\n    at validationCompleted (/app/node_modules/fastify/lib/handle-request.js:124:5)\n    at preValidationCallback (/app/node_modules/fastify/lib/handle-request.js:101:5)\n    at handler (/app/node_modules/fastify/lib/handle-request.js:78:7)\n    at Object.handleRequest (/app/node_modules/fastify/lib/handle-request.js:46:9)\n    at runPreParsing (/app/node_modules/fastify/lib/route.js:651:19)\n    at next (/app/node_modules/fastify/lib/hooks.js:236:9)\n    at handleResolve (/app/node_modules/fastify/lib/hooks.js:253:7)"},"msg":"Cannot destructure property 'email' of 'request.body' as it is undefined."}
+{"level":30,"time":1774863924827,"pid":195,"hostname":"2b453bfde338","reqId":"req-c","res":{"statusCode":500},"responseTime":459.9816330075264,"msg":"request completed"}

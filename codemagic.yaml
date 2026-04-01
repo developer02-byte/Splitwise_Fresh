@@ -1,6 +1,6 @@
 workflows:
-  default-workflow:
-    name: Default Workflow
+  ios-workflow:
+    name: iOS Workflow
     working_directory: frontend
 
     environment:
@@ -8,15 +8,20 @@ workflows:
       xcode: latest
 
     scripts:
-      - name: Flutter doctor
-        script: flutter doctor
+      - name: Flutter clean
+        script: flutter clean
 
-      - name: Install dependencies
+      - name: Get dependencies
         script: flutter pub get
 
-      - name: Build iOS
+      - name: Install CocoaPods
         script: |
-          flutter build ios --release --no-codesign
+          cd ios
+          pod install
+          cd ..
+
+      - name: Build iOS (no signing)
+        script: flutter build ios --release --no-codesign
 
     artifacts:
       - build/ios/iphoneos/*.app

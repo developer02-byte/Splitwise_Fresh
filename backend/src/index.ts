@@ -19,8 +19,16 @@ import categoryRoutes from './routes/categories';
 import searchRoutes from './routes/search';
 import healthRoutes from './routes/health';
 import versionRoutes from './routes/version';
+import analyticsRoutes from './routes/analytics';
+import exportRoutes from './routes/export';
+import { ExchangeRateService } from './services/exchange_rate';
 import traceIdPlugin from './plugins/trace_id';
 import metricsPlugin from './plugins/metrics';
+import multipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
+import path from 'path';
+import { StorageService } from './services/storage';
+import fileRoutes from './routes/files';
 
 const fastify = Fastify({ 
   logger: {
@@ -63,6 +71,17 @@ async function start() {
   });
   await fastify.register(cookie);
   
+  await fastify.register(multipart, {
+    limits: { fileSize: 5 * 1024 * 1024 }
+  });
+
+  await fastify.register(fastifyStatic, {
+     root: path.join(__dirname, '../uploads'),
+     prefix: '/uploads/',
+  });
+
+  await StorageService.init();
+  
   await fastify.register(traceIdPlugin);
   await fastify.register(metricsPlugin, { prefix: '/api' });
 
@@ -78,7 +97,14 @@ async function start() {
     if (request.method === 'OPTIONS') return;
 
     // Skip public routes
-    if (request.url.startsWith('/api/auth/login') || request.url.startsWith('/api/auth/signup') || request.url.startsWith('/api/auth/refresh') || request.url.startsWith('/api/currencies/rates') || request.url.startsWith('/api/health') || request.url.startsWith('/api/version/check') || request.url.startsWith('/api/metrics')) {
+    if (request.url.startsWith('/api/auth/login') ||
+        request.url.startsWith('/api/auth/signup') ||
+        request.url.startsWith('/api/auth/refresh') ||
+        request.url.startsWith('/api/currencies/rates') ||
+        request.url.startsWith('/api/health') ||
+        request.url.startsWith('/api/version/check') ||
+        request.url.startsWith('/api/metrics') ||
+        request.url.startsWith('/uploads/')) {
       return;
     }
 
@@ -113,14 +139,19 @@ async function start() {
   fastify.register(notificationsRoutes, { prefix: '/api/notifications' });
   fastify.register(categoryRoutes, { prefix: '/api/categories' });
   fastify.register(searchRoutes, { prefix: '/api/search' });
+  fastify.register(analyticsRoutes, { prefix: '/api/analytics' });
   fastify.register(healthRoutes, { prefix: '/api/health' });
   fastify.register(versionRoutes, { prefix: '/api/version' });
+  fastify.register(exportRoutes, { prefix: '/api/export' });
+  fastify.register(fileRoutes, { prefix: '/api/files' });
   
   // Also register currencies for formatCurrency (mock)
   fastify.get('/api/currencies/rates', async (request, reply) => {
+    const base = (request.query as any).base || 'USD';
+    const rates = await ExchangeRateService.getLatestRates(base);
     return reply.send({
       success: true,
-      data: { 'USD_EUR': 0.92, 'USD_GBP': 0.79, 'USD_INR': 83.15, 'USD_JPY': 149.50 }
+      data: rates
     });
   });
 

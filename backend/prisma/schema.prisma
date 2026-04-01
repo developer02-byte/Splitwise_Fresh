@@ -89,6 +89,7 @@ model User {
   balancesAsCounter    Balance[] @relation("CounterpartBalance")
   friendsRequested     Friendship[] @relation("Requester")
   friendsAddressing    Friendship[] @relation("Addressee")
+  files                File[]
 
   @@map("users")
 }
@@ -415,4 +416,20 @@ model AppVersion {
   updatedAt      DateTime  @default(now()) @map("updated_at") @db.Timestamptz
 
   @@map("app_versions")
+}model File {
+  id            String    @id @default(uuid())
+  uploaderId    Int       @map("uploader_id")
+  fileType      String    @map("file_type") // AVATAR, RECEIPT, COVER, ATTACHMENT
+  storagePath   String    @map("storage_path")
+  thumbnailPath String?   @map("thumbnail_path")
+  publicUrl     String?   @map("public_url")
+  mimeType      String    @map("mime_type")
+  sizeBytes     Int       @map("size_bytes")
+  linkedTo      String?   @map("linked_to")  // "user:id" or "expense:id"
+  deletedAt     DateTime? @map("deleted_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  uploader      User      @relation(fields: [uploaderId], references: [id])
+
+  @@map("files")
 }

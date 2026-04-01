@@ -385,7 +385,7 @@ export default async function groupRoutes(fastify: FastifyInstance) {
         const cat = e.category?.name || 'General';
         const payer = e.payer?.name || 'Unknown';
         const amount = (e.totalAmount / 100).toFixed(2);
-        csv.concat(`${date},"${title}",${cat},${payer},${amount},${e.originalCurrency}\n`);
+        csv += `${date},"${title}",${cat},${payer},${amount},${e.originalCurrency}\n`;
       }
 
       reply

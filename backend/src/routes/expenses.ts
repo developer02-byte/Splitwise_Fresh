@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client';
 import { NotificationService } from '../services/notificationService';
 
 const prisma = new PrismaClient();
+import { ExchangeRateService } from '../services/exchange_rate';
+import { Decimal } from '@prisma/client/runtime/library';
 
 export default async function expenseRoutes(fastify: FastifyInstance) {
   // ── 1. Create Expense ──────────────────────────────────────────────────────────
@@ -10,7 +12,7 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
     const userId = (request as any).userId; 
     const { 
       groupId, categoryId, title, totalAmount, originalCurrency, paidBy, splits, idempotencyKey,
-      isRecurring, recurrenceType, recurrenceDay
+      isRecurring, recurrenceType, recurrenceDay, receiptUrl
     } = request.body as any;
 
     try {
@@ -24,6 +26,15 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
       
       if (sumOfSplits !== totalAmountRound) {
         return reply.code(400).send({ success: false, code: 'MATH_MISMATCH', error: `Splits sum (${sumOfSplits}) does not match total amount (${totalAmountRound})` });
+      }
+
+      // Currency Conversion logic
+      let exchangeRate = 1.0;
+      let totalAmountUSD = totalAmount;
+      if (originalCurrency && originalCurrency !== 'USD') {
+        const rates = await ExchangeRateService.getLatestRates(originalCurrency);
+        exchangeRate = rates['USD'] || 1.0;
+        totalAmountUSD = Math.round(totalAmount * exchangeRate);
       }
 
       // Calculate first due date if recurring
@@ -41,6 +52,8 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
             isRecurring: isRecurring || false,
             recurrenceType,
             recurrenceDay: recurrenceDay ? Number(recurrenceDay) : null,
+            receiptImageUrl: receiptUrl,
+            exchangeRateSnapshot: new Decimal(exchangeRate),
             nextDueDate,
             splits: {
               create: splits.map((s: any) => ({
@@ -57,15 +70,16 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
         // Add balances
         for (const split of newExpense.splits) {
           if (split.userId === paidBy) continue;
+          const owedUSD = Math.round(split.owedAmount * exchangeRate);
           await tx.balance.upsert({
             where: { userId_counterpartId: { userId: split.userId, counterpartId: paidBy } },
-            update: { netBalance: { decrement: split.owedAmount } },
-            create: { userId: split.userId, counterpartId: paidBy, netBalance: -split.owedAmount }
+            update: { netBalance: { decrement: owedUSD } },
+            create: { userId: split.userId, counterpartId: paidBy, netBalance: -owedUSD }
           });
           await tx.balance.upsert({
             where: { userId_counterpartId: { userId: paidBy, counterpartId: split.userId } },
-            update: { netBalance: { increment: split.owedAmount } },
-            create: { userId: paidBy, counterpartId: split.userId, netBalance: split.owedAmount }
+            update: { netBalance: { increment: owedUSD } },
+            create: { userId: paidBy, counterpartId: split.userId, netBalance: owedUSD }
           });
         }
         return newExpense;
@@ -90,7 +104,7 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
           await NotificationService.notifyBulk(notifications);
         }
       } catch (err) {
-        fastify.log.error('Notification failed for new expense', err);
+        fastify.log.error({ err }, 'Notification failed for new expense');
       }
 
       return reply.send({ success: true, data: expense });
@@ -126,13 +140,14 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
 
         for (const split of expense.splits) {
           if (split.userId === expense.paidBy) continue;
+          const owedUSD = Math.round(split.owedAmount * Number(expense.exchangeRateSnapshot));
           await tx.balance.update({
             where: { userId_counterpartId: { userId: split.userId, counterpartId: expense.paidBy } },
-            data: { netBalance: { increment: split.owedAmount } }
+            data: { netBalance: { increment: owedUSD } }
           });
           await tx.balance.update({
             where: { userId_counterpartId: { userId: expense.paidBy, counterpartId: split.userId } },
-            data: { netBalance: { decrement: split.owedAmount } }
+            data: { netBalance: { decrement: owedUSD } }
           });
         }
       });
@@ -147,7 +162,7 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
   fastify.patch('/:id', async (request, reply) => {
     const { id } = request.params as any;
     const userId = (request as any).userId;
-    const { title, totalAmount, paidBy, splits } = request.body as any;
+    const { title, totalAmount, originalCurrency, paidBy, splits, receiptUrl } = request.body as any;
 
     try {
       const oldExpense = await prisma.expense.findUnique({
@@ -163,16 +178,24 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
         return reply.code(400).send({ success: false, error: 'Math Mismatch' });
       }
 
+      // Currency Conversion logic
+      let exchangeRate = 1.0;
+      if (originalCurrency && originalCurrency !== 'USD') {
+        const rates = await ExchangeRateService.getLatestRates(originalCurrency);
+        exchangeRate = rates['USD'] || 1.0;
+      }
+
       await prisma.$transaction(async (tx) => {
         for (const split of oldExpense.splits) {
           if (split.userId === oldExpense.paidBy) continue;
+          const oldOwedUSD = Math.round(split.owedAmount * Number(oldExpense.exchangeRateSnapshot));
           await tx.balance.update({
             where: { userId_counterpartId: { userId: split.userId, counterpartId: oldExpense.paidBy } },
-            data: { netBalance: { increment: split.owedAmount } }
+            data: { netBalance: { increment: oldOwedUSD } }
           });
           await tx.balance.update({
             where: { userId_counterpartId: { userId: oldExpense.paidBy, counterpartId: split.userId } },
-            data: { netBalance: { decrement: split.owedAmount } }
+            data: { netBalance: { decrement: oldOwedUSD } }
           });
         }
 
@@ -181,7 +204,9 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
         await tx.expense.update({
           where: { id: oldExpense.id },
           data: {
-            title, totalAmount, paidBy,
+            title, totalAmount, originalCurrency, paidBy,
+            receiptImageUrl: receiptUrl,
+            exchangeRateSnapshot: new Decimal(exchangeRate),
             splits: {
               create: splits.map((s: any) => ({
                 userId: s.userId, owedAmount: s.owedAmount,
@@ -193,13 +218,14 @@ export default async function expenseRoutes(fastify: FastifyInstance) {
 
         for (const newSplit of splits) {
           if (newSplit.userId === paidBy) continue;
+          const newOwedUSD = Math.round(newSplit.owedAmount * exchangeRate);
           await tx.balance.update({
             where: { userId_counterpartId: { userId: newSplit.userId, counterpartId: paidBy } },
-            data: { netBalance: { decrement: newSplit.owedAmount } }
+            data: { netBalance: { decrement: newOwedUSD } }
           });
           await tx.balance.update({
             where: { userId_counterpartId: { userId: paidBy, counterpartId: newSplit.userId } },
-            data: { netBalance: { increment: newSplit.owedAmount } }
+            data: { netBalance: { increment: newOwedUSD } }
           });
         }
       });
