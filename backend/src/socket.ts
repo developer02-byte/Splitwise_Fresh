@@ -17,7 +17,7 @@ export function setupSocketServer(fastify: FastifyInstance) {
   });
 
   // 1. Authentication Handshake Middleware
-  io.use(async (socket, next) => {
+  io.use(async (socket: any, next: any) => {
     try {
       // Parse the HttpOnly 'access_token' cookie set in Auth_Contract.md
       const cookiesStr = socket.request.headers.cookie;
@@ -31,7 +31,7 @@ export function setupSocketServer(fastify: FastifyInstance) {
       // Verify JWT and extract userId
       let userId: number;
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret') as { sub: number };
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret') as unknown as { sub: number };
         userId = decoded.sub;
       } catch {
         return next(new Error("Authentication error: Invalid token"));
@@ -47,7 +47,7 @@ export function setupSocketServer(fastify: FastifyInstance) {
   });
 
   // 2. Room Assignment Connection Flow
-  io.on('connection', async (socket) => {
+  io.on('connection', async (socket: any) => {
     const userId = (socket as any).userId;
     fastify.log.info(`Socket User ${userId} connected (${socket.id})`);
 
@@ -65,7 +65,7 @@ export function setupSocketServer(fastify: FastifyInstance) {
         socket.join(`group:${member.groupId}`);
       });
     } catch (e) {
-      fastify.log.error(`Failed to join group rooms for User ${userId}`, e);
+      fastify.log.error(`Failed to join group rooms for User ${userId}: ${e}`);
     }
 
     // Client explicitly requests to join a new group room (Optimistic UI created a group)

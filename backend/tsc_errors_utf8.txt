@@ -1,0 +1,34 @@
+﻿src/jobs/workers.ts(31,13): error TS18046: 'data' is of type 'unknown'.
+src/jobs/workers.ts(32,56): error TS18046: 'data' is of type 'unknown'.
+src/jobs/workers.ts(35,47): error TS18046: 'data' is of type 'unknown'.
+src/routes/friends.ts(155,11): error TS2353: Object literal may only specify known properties, and 'userId' does not exist in type '{ recipientId: number; title: string; message: string; referenceType: NotificationType; referenceId?: number | undefined; }'.
+src/routes/friends.ts(209,13): error TS2353: Object literal may only specify known properties, and 'userId' does not exist in type '{ recipientId: number; title: string; message: string; referenceType: NotificationType; referenceId?: number | undefined; }'.
+src/routes/invites.ts(31,20): error TS2339: Property 'groupInvite' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/routes/invites.ts(55,35): error TS2339: Property 'groupInvite' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/routes/invites.ts(88,35): error TS2339: Property 'groupInvite' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/routes/legal.ts(7,27): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/routes/legal.ts(13,27): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/routes/socialAuth.ts(39,60): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(obj: "Google token verification failed", msg?: undefined): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+  Overload 2 of 3, '(obj: "Google token verification failed", msg?: undefined, ...args: unknown[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+src/routes/socialAuth.ts(82,59): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(obj: "Apple token verification failed", msg?: undefined): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+  Overload 2 of 3, '(obj: "Apple token verification failed", msg?: undefined, ...args: unknown[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+src/socket.ts(1,42): error TS2307: Cannot find module 'socket.io' or its corresponding type declarations.
+src/socket.ts(20,17): error TS7006: Parameter 'socket' implicitly has an 'any' type.
+src/socket.ts(20,25): error TS7006: Parameter 'next' implicitly has an 'any' type.
+src/socket.ts(34,25): error TS2352: Conversion of type 'string | JwtPayload' to type '{ sub: number; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'JwtPayload' is not comparable to type '{ sub: number; }'.
+    Types of property 'sub' are incompatible.
+      Type 'string | undefined' is not comparable to type 'number'.
+        Type 'string' is not comparable to type 'number'.
+src/socket.ts(50,30): error TS7006: Parameter 'socket' implicitly has an 'any' type.
+src/socket.ts(68,74): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(obj: string, msg?: undefined): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+  Overload 2 of 3, '(obj: string, msg?: undefined, ...args: unknown[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.

@@ -36,7 +36,7 @@ export default async function socialAuthRoutes(fastify: FastifyInstance) {
         payload = ticket.getPayload();
       }
     } catch (e) {
-      fastify.log.warn('Google token verification failed', e);
+      fastify.log.warn(`Google token verification failed: ${e}`);
       return reply.code(401).send({ success: false, error: 'Invalid Google token' });
     }
 
@@ -79,7 +79,7 @@ export default async function socialAuthRoutes(fastify: FastifyInstance) {
         applePayload = payload;
       }
     } catch (e) {
-      fastify.log.warn('Apple token verification failed', e);
+      fastify.log.warn(`Apple token verification failed: ${e}`);
       return reply.code(401).send({ success: false, error: 'Invalid Apple token' });
     }
 

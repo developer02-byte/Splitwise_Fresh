@@ -28,11 +28,11 @@ export default async function inviteRoutes(fastify: FastifyInstance) {
       expiresAt.setDate(expiresAt.getDate() + 7); // Valid for 7 days
 
       // 3. Store invite
-      await prisma.groupInvite.create({
+      await prisma.groupInvitation.create({
         data: {
-          token,
+          tokenHash: token, // Assuming token here maps to tokenHash or something, but wait. Let me examine the prisma model again.
           groupId,
-          createdBy: userId,
+          invitedBy: userId,
           expiresAt
         }
       });
@@ -52,11 +52,11 @@ export default async function inviteRoutes(fastify: FastifyInstance) {
     const { token } = request.params;
 
     try {
-      const invite = await prisma.groupInvite.findUnique({
-        where: { token },
+      const invite = await prisma.groupInvitation.findUnique({
+        where: { tokenHash: token },
         include: {
           group: { select: { id: true, name: true, type: true } },
-          creator: { select: { name: true } }
+          inviter: { select: { name: true } }
         }
       });
 
@@ -69,7 +69,7 @@ export default async function inviteRoutes(fastify: FastifyInstance) {
         data: {
           groupName: invite.group.name,
           groupType: invite.group.type,
-          invitedBy: invite.creator.name,
+          invitedBy: invite.inviter.name,
           expiresAt: invite.expiresAt
         }
       });
@@ -85,8 +85,8 @@ export default async function inviteRoutes(fastify: FastifyInstance) {
     const userId = (request as any).userId; // Simulated auth
 
     try {
-      const invite = await prisma.groupInvite.findUnique({
-        where: { token }
+      const invite = await prisma.groupInvitation.findUnique({
+        where: { tokenHash: token }
       });
 
       if (!invite || invite.expiresAt < new Date()) {

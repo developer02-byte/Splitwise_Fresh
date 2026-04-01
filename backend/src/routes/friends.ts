@@ -152,11 +152,11 @@ export default async function friendsRoutes(fastify: FastifyInstance) {
       try {
         const requester = await prisma.user.findUnique({ where: { id: userId } });
         await NotificationService.notify({
-          userId: targetId,
-          type: 'friend_request',
+          recipientId: targetId,
+          referenceType: 'friend_request',
           title: 'Friend Request',
           message: `${requester?.name || 'Someone'} sent you a friend request.`,
-          relatedId: friendship.id
+          referenceId: friendship.id
         });
       } catch (err) { fastify.log.error(err); }
 
@@ -206,11 +206,11 @@ export default async function friendsRoutes(fastify: FastifyInstance) {
         try {
           const approver = await prisma.user.findUnique({ where: { id: userId } });
           await NotificationService.notify({
-            userId: friendship.requesterId,
-            type: 'friend_request',
+            recipientId: friendship.requesterId,
+            referenceType: 'friend_request',
             title: 'Friend Request Accepted',
             message: `${approver?.name || 'Someone'} accepted your friend request!`,
-            relatedId: friendship.id
+            referenceId: friendship.id
           });
         } catch (err) { fastify.log.error(err); }
       }

@@ -26,7 +26,7 @@ export const exchangeRateWorker = new Worker(
       for (const base of BASE_CURRENCIES) {
         const url = `https://v6.exchangerate-api.com/v6/${API_KEY}/latest/${base}`;
         const response = await fetch(url);
-        const data = await response.json();
+        const data = (await response.json()) as any;
 
         if (data.result !== 'success') {
           throw new Error(`Bad response for ${base}: ${data['error-type']}`);
