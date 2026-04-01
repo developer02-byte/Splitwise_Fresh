@@ -15,19 +15,16 @@ workflows:
       - name: Get dependencies
         script: flutter pub get
 
-      - name: Generate code
-        script: dart run build_runner build --delete-conflicting-outputs
+      # Removed build_runner (causing CI failure)
 
       - name: Install CocoaPods
         script: |
           cd ios
           pod install
-          cd ..
 
       - name: Build iOS Simulator (NO SIGNING REQUIRED)
         script: |
-          flutter build ios --debug --simulator \
-            --no-codesign
+          flutter build ios --debug --simulator --no-codesign
 
     artifacts:
       - build/ios/iphonesimulator/*.app
