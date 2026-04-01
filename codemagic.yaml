@@ -17,6 +17,12 @@ workflows:
       - name: Generate code
         script: dart run build_runner build --delete-conflicting-outputs
 
+      - name: Clean iOS build
+        script: |
+          cd ios
+          rm -rf Pods Podfile.lock
+          cd ..
+
       - name: Install CocoaPods
         script: |
           cd ios
