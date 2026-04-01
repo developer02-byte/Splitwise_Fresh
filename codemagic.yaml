@@ -14,6 +14,9 @@ workflows:
       - name: Get dependencies
         script: flutter pub get
 
+      - name: Generate code
+        script: dart run build_runner build --delete-conflicting-outputs
+
       - name: Install CocoaPods
         script: |
           cd ios

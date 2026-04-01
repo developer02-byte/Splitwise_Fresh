@@ -3,7 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../shared/providers/upload_provider.dart';
+import '../../../../shared/providers/upload_provider.dart';
+import '../../../../core/network/dio_provider.dart';
 
 import '../../../../core/constants/dimensions.dart';
 import '../../domain/usecases/split_calculator.dart';
@@ -360,7 +361,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: _currencies.map((c) => ListTile(
                                   title: Text(c, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  onPressed: () {
+                                  onTap: () {
                                     setState(() => _selectedCurrency = c);
                                     Navigator.pop(ctx);
                                   },

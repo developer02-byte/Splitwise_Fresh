@@ -105,8 +105,6 @@ class GroupDetailScreen extends ConsumerWidget {
     );
   }
 
-  }
-
   void _exportToCsv(BuildContext context, WidgetRef ref, int groupId) async {
     final dio = ref.read(dioProvider);
     try {

@@ -56,6 +56,7 @@ class ProfileScreen extends ConsumerWidget {
                           shape: BoxShape.circle,
                           border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), width: 2),
                         ),
+                      ),
                       const SizedBox(height: 24),
                       Text(profile.name, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
                       const SizedBox(height: 8),

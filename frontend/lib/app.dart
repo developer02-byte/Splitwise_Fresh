@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:dio/dio.dart';
 import 'core/network/dio_provider.dart';
 
 import 'core/theme/app_theme.dart';
@@ -110,9 +111,9 @@ class _SplashScreenState extends ConsumerState<_SplashScreen> {
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
 
-      final res = await dio.get('/api/app/version/check', headers: {
+      final res = await dio.get('/api/app/version/check', options: Options(headers: {
         'x-platform': Theme.of(context).platform == TargetPlatform.android ? 'android' : 'ios',
-      });
+      }));
 
       if (res.data['success'] == true) {
         final data = res.data['data'];

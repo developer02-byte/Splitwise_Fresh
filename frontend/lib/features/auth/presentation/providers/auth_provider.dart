@@ -103,32 +103,7 @@ class AuthNotifier extends AsyncNotifier<Map<String, dynamic>?> {
   Future<void> loginWithGoogle() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      try {
-        final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
-        final account = await googleSignIn.signIn();
-        if (account == null) throw Exception('Google sign-in cancelled');
-
-        final auth = await account.authentication;
-        if (auth.idToken == null) throw Exception('Google auth failed (no token)');
-
-        final dio = ref.read(dioProvider);
-        final response = await dio.post('/api/auth/google', data: {
-          'id_token': auth.idToken,
-        });
-
-        if (response.data['success'] == true) {
-          final data = response.data['data'] as Map<String, dynamic>;
-          if (data.containsKey('token')) {
-            const storage = FlutterSecureStorage();
-            await storage.write(key: 'auth_token', value: data['token'] as String);
-          }
-          return await _fetchCurrentUser();
-        } else {
-          throw Exception(response.data['error'] ?? 'Google login failed');
-        }
-      } catch (e) {
-        throw Exception('Google sign-in failed: \$e');
-      }
+      throw Exception('Google sign-in is not configured for this build');
     });
   }
 

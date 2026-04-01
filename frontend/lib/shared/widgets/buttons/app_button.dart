@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/constants/dimensions.dart';
-
 /// AppButton — Fully accessible, themed button component.
 /// All interactive elements must be >= 48dp tall (WCAG 2.1 AA).
 /// Extracted to shared/widgets to prevent code duplication across features.
@@ -43,7 +41,7 @@ class AppButton extends StatelessWidget {
             foregroundColor: Colors.white,
             disabledBackgroundColor: color.withOpacity(0.5),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(kRadiusM),
+              borderRadius: BorderRadius.circular(8.0),
             ),
           ),
           child: isLoading
@@ -60,7 +58,7 @@ class AppButton extends StatelessWidget {
                   children: [
                     if (icon != null) ...[
                       Icon(icon, size: 18),
-                      const SizedBox(width: kSpacingS),
+                      const SizedBox(width: 8.0),
                     ],
                     Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
                   ],
@@ -95,7 +93,7 @@ class AppOutlineButton extends StatelessWidget {
           onPressed: onPressed,
           style: OutlinedButton.styleFrom(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(kRadiusM),
+              borderRadius: BorderRadius.circular(8.0),
             ),
             side: BorderSide(color: Theme.of(context).colorScheme.outline),
           ),
@@ -104,7 +102,7 @@ class AppOutlineButton extends StatelessWidget {
             children: [
               if (icon != null) ...[
                 Icon(icon, size: 18),
-                const SizedBox(width: kSpacingS),
+                const SizedBox(width: 8.0),
               ],
               Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
             ],

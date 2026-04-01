@@ -1,9 +1,9 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'dart:developer';
 
-import '../../../core/network/socket_provider.dart';
+import '../../../../core/network/socket_provider.dart';
 // State providers to invalidate
-import '../../dashboard/presentation/providers/balance_provider.dart';
+import 'balance_provider.dart';
 
 part 'realtime_sync_provider.g.dart';
 

@@ -25,10 +25,11 @@ class SettleUpModal extends ConsumerStatefulWidget {
 class _SettleUpModalState extends ConsumerState<SettleUpModal> {
   void _confirmSettlement() async {
     // Fire Optimistic UI Request
-    final success = await ref.read(settlementNotifierProvider.notifier).settleUp(
+    await ref.read(settlementNotifierProvider.notifier).submitSettlement(
       payeeId: widget.payeeId,
       amountCents: widget.owedAmountCents,
     );
+    final success = !ref.read(settlementNotifierProvider).hasError;
 
     if (mounted) {
       // Exit modal regardless of success (Optimistic UI lets users keep moving)

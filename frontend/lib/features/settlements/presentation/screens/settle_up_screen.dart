@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/dimensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/settlement_provider.dart';
-import '../../friends/presentation/providers/friends_provider.dart';
+import '../../../friends/presentation/providers/friends_provider.dart';
 
 class SettleUpScreen extends ConsumerStatefulWidget {
   final int? prefilledPayeeId;
@@ -45,7 +45,7 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
     super.dispose();
   }
 
-  void _onPayeeSelected(FriendMock? payee) {
+  void _onPayeeSelected(FriendModel? payee) {
     if (payee == null) return;
     setState(() {
       _selectedPayeeId = payee.id;
@@ -97,7 +97,7 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
       .then((_) {
          if (mounted && !ref.read(settlementNotifierProvider).hasError) {
            // Also refresh friends list to update balances
-           ref.read(friendsNotifierProvider.notifier).refresh();
+           ref.invalidate(friendsNotifierProvider);
            context.pop(true);
            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Settlement recorded!'), backgroundColor: AppColors.success));
          }
@@ -124,7 +124,7 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
             onPressed: () {
               ref.read(settlementNotifierProvider.notifier).settleAll().then((_) {
                  if (mounted && !ref.read(settlementNotifierProvider).hasError) {
-                   ref.read(friendsNotifierProvider.notifier).refresh();
+                   ref.invalidate(friendsNotifierProvider);
                    context.pop(true);
                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All debts settled!'), backgroundColor: AppColors.success));
                  }

@@ -52,6 +52,7 @@ class AuthInterceptor extends QueuedInterceptor {
         );
 
         if (refreshResponse.statusCode == 200 && refreshResponse.data['success'] == true) {
+          final newToken = refreshResponse.data['data']['token'] as String;
           const storage = FlutterSecureStorage();
           await storage.write(key: 'auth_token', value: newToken);
 

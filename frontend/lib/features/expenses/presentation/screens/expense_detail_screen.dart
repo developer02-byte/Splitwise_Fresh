@@ -88,8 +88,8 @@ class _ExpenseDetailScreenState extends ConsumerState<ExpenseDetailScreen> {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: isDark 
-                                ? [AppColors.primary600.withOpacity(0.2), AppColors.primary400.withOpacity(0.1)]
-                                : [AppColors.primary50.withOpacity(0.5), Colors.white],
+                                ? [AppColors.primary500.withOpacity(0.2), AppColors.primary500.withOpacity(0.1)]
+                                : [AppColors.primary500.withOpacity(0.1), Colors.white],
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                           ),
@@ -119,7 +119,7 @@ class _ExpenseDetailScreenState extends ConsumerState<ExpenseDetailScreen> {
                              Row(
                                mainAxisAlignment: MainAxisAlignment.center,
                                children: [
-                                 CircleAvatar(radius: 12, backgroundColor: AppColors.primary200, child: const Icon(Icons.person, size: 14, color: Colors.white)),
+                                 CircleAvatar(radius: 12, backgroundColor: AppColors.primary500.withOpacity(0.5), child: const Icon(Icons.person, size: 14, color: Colors.white)),
                                  const SizedBox(width: 8),
                                  Text(
                                    'Paid by $payer', 

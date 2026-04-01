@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/dimensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/friends_provider.dart';
+import '../../../../core/network/dio_provider.dart';
 
 class FriendDetailScreen extends ConsumerWidget {
   final int friendId;

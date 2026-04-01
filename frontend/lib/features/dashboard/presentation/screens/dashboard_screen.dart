@@ -279,8 +279,6 @@ class DashboardScreen extends ConsumerWidget {
                               ),
                             ),
                           );
-                        },
-                      );
                   },
                 ),
                 const SliverToBoxAdapter(child: SizedBox(height: 100)), // Bottom spacing

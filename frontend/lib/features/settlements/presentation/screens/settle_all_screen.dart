@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/dimensions.dart';
-import '../../dashboard/presentation/providers/balance_provider.dart';
+import '../../../dashboard/presentation/providers/balance_provider.dart';
 import '../../../../core/network/dio_provider.dart';
 
 class SettleAllScreen extends ConsumerStatefulWidget {

@@ -39,7 +39,7 @@ class OfflineSyncService {
       
       log('Syncing ${actions.length} pending actions', name: 'SyncService');
 
-      for (const action in actions) {
+      for (final action in actions) {
         final id = action['id'] as int;
         final type = action['action_type'] as String;
         final payload = jsonDecode(action['payload'] as String);
