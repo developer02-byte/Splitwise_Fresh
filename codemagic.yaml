@@ -20,8 +20,9 @@ workflows:
           pod install --repo-update
           cd ..
 
-      - name: Build iOS (no signing)
-        script: flutter build ios --debug --simulator
+      - name: Build iOS Simulator (NO SIGNING REQUIRED)
+        script: |
+          flutter build ios --debug --simulator
 
     artifacts:
       - build/ios/iphonesimulator/*.app
