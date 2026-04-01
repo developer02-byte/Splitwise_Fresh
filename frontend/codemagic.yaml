@@ -15,14 +15,12 @@ workflows:
       - name: Get dependencies
         script: flutter pub get
 
-      # Removed build_runner (causing CI failure)
-
       - name: Install CocoaPods
         script: |
           cd ios
           pod install
 
-      - name: Build iOS Simulator (NO SIGNING REQUIRED)
+      - name: Build iOS Simulator
         script: |
           flutter build ios --debug --simulator --no-codesign
 
