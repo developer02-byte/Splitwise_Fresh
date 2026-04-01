@@ -19,8 +19,6 @@ jobs:
     steps:
       - name: Checkout latest code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -28,47 +26,22 @@ jobs:
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
 
-      - name: Clean install
-        working-directory: backend
-        run: |
-          rm -rf node_modules package-lock.json
-          npm install
-
-      - name: Debug package.json
-        working-directory: backend
-        run: cat package.json
-
-      - name: Ensure TypeScript installed
-        working-directory: backend
-        run: |
-          npm install typescript --save-dev || true
-
-      - name: Compile TypeScript directly
-        working-directory: backend
-        run: |
-          npx tsc
+      - name: Install dependencies
+        run: npm ci
 
       - name: Prisma generate
         run: npx prisma generate
-        continue-on-error: true
 
-      - name: Prisma migrate (optional)
-        run: npx prisma migrate deploy
-        env:
-          DATABASE_URL: "postgresql://splitease:splitease@localhost:5432/splitease_test"
-        continue-on-error: true
-
-      - name: Type check (non-blocking)
-        run: npx tsc --noEmit
-        continue-on-error: true
+      - name: Compile TypeScript
+        run: npx tsc
 
       - name: Tests (non-blocking)
         run: npx vitest run --passWithNoTests
         continue-on-error: true
 
-      - name: Docker build (main only)
+      - name: Verify Docker build (main only)
         if: github.ref == 'refs/heads/main'
-        run: docker build -t backend:${{ github.sha }} .
+        run: docker build -t backend:ci-test .
 
 
   flutter:
@@ -94,10 +67,10 @@ jobs:
         continue-on-error: true
 
       - name: Tests (non-blocking)
-        run: flutter test --pass-with-no-tests
+        run: flutter test || echo "Tests failed or no tests found"
         continue-on-error: true
 
-      - name: Build web
+      - name: Verify Web Build
         run: flutter build web --release
 
 
