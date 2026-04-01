@@ -17,11 +17,11 @@ workflows:
       - name: Install CocoaPods
         script: |
           cd ios
-          pod install
+          pod install --repo-update
           cd ..
 
       - name: Build iOS (no signing)
-        script: flutter build ios --debug --no-codesign
+        script: flutter build ios --debug --simulator
 
     artifacts:
-      - build/ios/iphoneos/*.app
+      - build/ios/iphonesimulator/*.app
