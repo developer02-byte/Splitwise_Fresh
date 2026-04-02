@@ -58,3 +58,22 @@ workflows:
     artifacts:
       - build/ios/iphonesimulator/*.app
       - build/ios/ipa/*.ipa
+
+  web-workflow:
+    name: Flutter Web Build
+    working_directory: frontend
+    max_build_duration: 30
+    instance_type: linux_x2
+    environment:
+      flutter: 3.29.2
+    scripts:
+      - name: Flutter clean
+        script: flutter clean
+      - name: Get dependencies
+        script: flutter pub get
+      - name: Analyze (non-blocking)
+        script: flutter analyze --no-fatal-warnings --no-fatal-infos || true
+      - name: Build Web Release
+        script: flutter build web --release
+    artifacts:
+      - build/web/**
