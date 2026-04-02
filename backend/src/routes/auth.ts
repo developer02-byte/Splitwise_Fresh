@@ -103,15 +103,15 @@ export default async function authRoutes(fastify: FastifyInstance) {
     // Set HttpOnly Cookies
     reply.cookie('access_token', accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: true,
+      sameSite: 'none',
       maxAge: 15 * 60 // 15 mins
     });
 
     reply.cookie('refresh_token', refreshTokenPlain, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: true,
+      sameSite: 'none',
       path: '/api/auth/refresh',
       maxAge: 30 * 24 * 60 * 60 // 30 days
     });
@@ -156,15 +156,15 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
     reply.cookie('access_token', newAccessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: true,
+      sameSite: 'none',
       maxAge: 15 * 60
     });
 
     reply.cookie('refresh_token', newRefreshPlain, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: true,
+      sameSite: 'none',
       path: '/api/auth/refresh',
       maxAge: 30 * 24 * 60 * 60
     });

@@ -51,8 +51,8 @@ export default async function socialAuthRoutes(fastify: FastifyInstance) {
     reply.setCookie('token', accessToken, {
       path: '/',
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'none',
       maxAge: 15 * 60, // 15 mins
     });
     
@@ -94,8 +94,8 @@ export default async function socialAuthRoutes(fastify: FastifyInstance) {
     reply.setCookie('token', accessToken, {
       path: '/',
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'none',
       maxAge: 15 * 60,
     });
     

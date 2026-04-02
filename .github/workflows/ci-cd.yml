@@ -74,23 +74,4 @@ jobs:
 
       - name: Verify Web Build
         run: flutter build web --release
-
-
-  deploy:
-    name: Deploy to VPS
-    needs: [backend, flutter]
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Deploy
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            cd /opt/splitease
-            git pull origin main
-            docker compose up -d --build
-            echo "Deployed"
+
