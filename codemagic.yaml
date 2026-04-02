@@ -11,6 +11,8 @@ workflows:
         # Update this to your Cloudflare Tunnel Domain
         API_URL: "https://yourdomain.com/api"
     scripts:
+      - name: Inject google-services.json
+        script: echo $GOOGLE_SERVICES_JSON | base64 --decode > android/app/google-services.json || true
       - name: Flutter clean
         script: flutter clean
       - name: Get dependencies
