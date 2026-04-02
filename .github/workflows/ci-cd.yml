@@ -59,8 +59,10 @@ jobs:
         with:
           flutter-version: '3.29.2'
 
-      - name: Install deps
-        run: flutter pub get
+      - name: Clean and install deps
+        run: |
+          flutter clean
+          flutter pub get
 
       - name: Analyze (non-blocking)
         run: flutter analyze --no-fatal-warnings
