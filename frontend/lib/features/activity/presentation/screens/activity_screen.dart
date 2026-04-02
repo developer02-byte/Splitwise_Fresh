@@ -330,7 +330,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       if (range == 'month') {
         final now = DateTime.now();
         final firstDay = DateTime(now.year, now.month, 1);
-        url += '&from=\${firstDay.toIso8601String()}&to=\${now.toIso8601String()}';
+        url += '&from=${firstDay.toIso8601String()}&to=${now.toIso8601String()}';
       }
 
       final res = await dio.get(url);

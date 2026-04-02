@@ -11,7 +11,6 @@ class GlobalErrorBoundary extends StatefulWidget {
 
 class _GlobalErrorBoundaryState extends State<GlobalErrorBoundary> {
   bool _hasError = false;
-  Object? _error;
 
   @override
   void initState() {
@@ -45,7 +44,6 @@ class _GlobalErrorBoundaryState extends State<GlobalErrorBoundary> {
                   onPressed: () {
                     setState(() {
                       _hasError = false;
-                      _error = null;
                     });
                   },
                   child: const Text('Try Again'),
@@ -60,7 +58,6 @@ class _GlobalErrorBoundaryState extends State<GlobalErrorBoundary> {
       onCatch: (error, stack) {
         setState(() {
           _hasError = true;
-          _error = error;
         });
       },
       child: widget.child,

@@ -20,9 +20,9 @@ class FriendDetailScreen extends ConsumerWidget {
       orElse: () => FriendModel(id: friendId, name: 'Loading...', email: '', netBalanceCents: 0)
     );
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final netUsd = friend.netBalanceCents / 100.0;
-    final owesYou = netUsd > 0;
+
     final youOwe = netUsd < 0;
     final isSettled = netUsd == 0;
 

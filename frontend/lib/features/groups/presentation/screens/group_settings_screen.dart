@@ -37,7 +37,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final membersAsync = ref.watch(groupMembersProvider(widget.groupId));
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+
 
     return Scaffold(
       appBar: AppBar(
